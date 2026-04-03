@@ -3,7 +3,7 @@ let user = "";
 function crearUsuario() {
   user = document.getElementById("name").value;
 
-  fetch("http://localhost:3000/user", {
+  fetch("/user", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: user })
@@ -18,7 +18,7 @@ function jugar() {
   const numero = parseInt(document.getElementById("numero").value);
   const apuesta = parseInt(document.getElementById("apuesta").value);
 
-  fetch("http://localhost:3000/roulette", {
+  fetch("/roulette", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
