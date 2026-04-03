@@ -1,1 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Casino</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+<h1>🎰 Casino Ruleta</h1>
+
+<input id="name" placeholder="Tu nombre">
+<button onclick="crearUsuario()">Entrar</button>
+
+<h2 id="saldo"></h2>
+
+<input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
+<input id="apuesta" type="number" placeholder="Apuesta">
+
+<button onclick="jugar()">Girar Ruleta</button>
+
+<h2 id="resultado"></h2>
+
+<script src="script.js"></script>
+</body>
+</html>
