@@ -1,25 +1,29 @@
 const symbols = ["🍒", "🍋", "🍊", "⭐", "💎", "7️⃣"];
 
 function spin() {
+  spinReel("r1", 20, 100);
+  spinReel("r2", 30, 100);
+  spinReel("r3", 40, 100);
+}
 
-  let r1 = document.getElementById("r1");
-  let r2 = document.getElementById("r2");
-  let r3 = document.getElementById("r3");
+function spinReel(id, spins, speed) {
+  let reel = document.getElementById(id);
 
-  let spins = 20;
+  let count = 0;
 
   let interval = setInterval(() => {
-    r1.innerText = symbols[Math.floor(Math.random() * symbols.length)];
-    r2.innerText = symbols[Math.floor(Math.random() * symbols.length)];
-    r3.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+    reel.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+    count++;
 
-    spins--;
-
-    if (spins <= 0) {
+    if (count >= spins) {
       clearInterval(interval);
-      checkWin();
+
+      // cuando termina el último, verifica resultado
+      if (id === "r3") {
+        setTimeout(checkWin, 300);
+      }
     }
-  }, 100);
+  }, speed);
 }
 
 function checkWin() {
@@ -28,7 +32,7 @@ function checkWin() {
   let r3 = document.getElementById("r3").innerText;
 
   if (r1 === r2 && r2 === r3) {
-    document.getElementById("resultado").innerText = "🎉 GANASTE!";
+    document.getElementById("resultado").innerText = "🎉 JACKPOT!";
   } else {
     document.getElementById("resultado").innerText = "😢 Perdiste";
   }
