@@ -1,26 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Casino</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Ruleta</title>
 </head>
 <body>
 
-<h1>🎰 Casino Ruleta</h1>
 <script>
 if (!localStorage.getItem("user")) {
   window.location.href = "/";
 }
 </script>
-<h2 id="saldo"></h2>
 
-<input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
-<input id="apuesta" type="number" placeholder="Apuesta">
+<h1>🎡 Ruleta</h1>
 
-<button onclick="jugar()">Girar Ruleta</button>
+<div id="saldo"></div>
 
-<h2 id="resultado"></h2>
+<input type="number" id="numero" placeholder="Número (0-36)">
+<input type="number" id="apuesta" value="50">
+<button onclick="jugar()">Jugar</button>
 
-<script src="script.js"></script>
+<p id="resultado"></p>
+
+<a href="/"><button>⬅ Volver</button></a>
+
+<script>
+let saldo = parseInt(localStorage.getItem("saldo") || "0");
+
+function actualizarSaldo() {
+  document.getElementById("saldo").innerText = "Saldo: " + saldo;
+  localStorage.setItem("saldo", saldo);
+}
+
+window.onload = actualizarSaldo;
+
+function jugar() {
+  let numero = parseInt(document.getElementById("numero").value);
+  let apuesta = parseInt(document.getElementById("apuesta").value);
+
+  if (apuesta > saldo) {
+    alert("No tenés saldo");
+    return;
+  }
+
+  let resultado = Math.floor(Math.random() * 37);
+
+  saldo -= apuesta;
+
+  if (numero === resultado) {
+    let premio = apuesta * 10;
+    saldo += premio;
+    document.getElementById("resultado").innerText =
+      "Salió " + resultado + " 🎉 Ganaste " + premio;
+  } else {
+    document.getElementById("resultado").innerText =
+      "Salió " + resultado + " 😢 Perdiste";
+  }
+
+  actualizarSaldo();
+}
+</script>
+
 </body>
 </html>
