@@ -1,26 +1,33 @@
 body {
   background: #111;
   color: white;
+  font-family: Arial, sans-serif;
   text-align: center;
-  font-family: Arial;
+  padding-top: 40px;
 }
 
-h1 {
-  margin-top: 50px;
-}
-
-.menu {
-  margin-top: 40px;
+input, button {
+  padding: 12px;
+  margin: 8px;
+  font-size: 16px;
 }
 
 button {
+  cursor: pointer;
+}
+
+.menu {
+  margin-top: 30px;
+}
+
+.menu a {
   display: block;
-  margin: 20px auto;
-  padding: 20px;
-  width: 200px;
-  font-size: 20px;
+  margin: 15px auto;
+}
+
+.menu button {
+  width: 220px;
   background: gold;
   border: none;
   border-radius: 10px;
-  cursor: pointer;
 }
