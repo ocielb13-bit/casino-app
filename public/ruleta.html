@@ -7,10 +7,11 @@
 <body>
 
 <h1>🎰 Casino Ruleta</h1>
-
-<input id="name" placeholder="Tu nombre">
-<button onclick="crearUsuario()">Entrar</button>
-
+<script>
+if (!localStorage.getItem("user")) {
+  window.location.href = "/";
+}
+</script>
 <h2 id="saldo"></h2>
 
 <input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
