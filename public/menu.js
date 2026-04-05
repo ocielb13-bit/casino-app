@@ -6,6 +6,13 @@ function crearUsuario() {
     return;
   }
 
+  localStorage.setItem("user", nombre);
+  localStorage.setItem("saldo", 1000);
+
+  document.getElementById("login").style.display = "none";
+  document.getElementById("juegos").style.display = "block";
+}
+
   // guardar usuario
   localStorage.setItem("user", nombre);
 
