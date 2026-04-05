@@ -18,23 +18,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-function crearUsuario() {
-  const nameInput = document.getElementById("name");
-  const name = nameInput ? nameInput.value.trim() : "";
 
-  if (!name) {
-    alert("Escribí un nombre");
-    return;
-  }
-
-  user = name;
-  localStorage.setItem("user", user);
-
-  fetch("/user", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: user })
-  })
     .then(res => res.json())
     .then(() => {
       actualizarSaldo();
