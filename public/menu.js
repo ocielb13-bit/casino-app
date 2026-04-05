@@ -1,5 +1,12 @@
+function mostrarMenu(nombre) {
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("menuBox").style.display = "block";
+  document.getElementById("mensaje").innerText = "Bienvenido, " + nombre + " 🎰";
+}
+
 function crearUsuario() {
-  let nombre = document.getElementById("name").value;
+  const input = document.getElementById("name");
+  const nombre = input.value.trim();
 
   if (!nombre) {
     alert("Poné un nombre");
@@ -7,25 +14,20 @@ function crearUsuario() {
   }
 
   localStorage.setItem("user", nombre);
-  localStorage.setItem("saldo", 1000);
 
-  document.getElementById("login").style.display = "none";
-  document.getElementById("juegos").style.display = "block";
-}
-
-  // guardar usuario
-  localStorage.setItem("user", nombre);
-
-  // si no hay saldo, crear uno
   if (!localStorage.getItem("saldo")) {
-    localStorage.setItem("saldo", 1000);
+    localStorage.setItem("saldo", "1000");
   }
 
-  document.getElementById("mensaje").innerText =
-    "Bienvenido " + nombre + " 🎰";
-
-  // redirigir automáticamente (opcional)
-  setTimeout(() => {
-    window.location.href = "/index.html";
-  }, 1000);
+  mostrarMenu(nombre);
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  const userGuardado = localStorage.getItem("user");
+
+  if (userGuardado) {
+    const input = document.getElementById("name");
+    if (input) input.value = userGuardado;
+    mostrarMenu(userGuardado);
+  }
+});
