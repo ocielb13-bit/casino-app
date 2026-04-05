@@ -1,21 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
   <title>Casino App</title>
   <link rel="stylesheet" href="menu.css">
 </head>
 <body>
 
-<input type="text" id="name" placeholder="Tu nombre">
-<button onclick="crearUsuario()">Entrar al casino</button>
-
-<p id="mensaje"></p>
   <h1>🎰 MI CASINO</h1>
 
-  <div class="menu">
-   <a href="/ruleta.html"><button>🎡 Ruleta</button></a>
-<a href="/slots.html"><button>🎰 Slots</button></a>
+  <div id="loginBox">
+    <input type="text" id="name" placeholder="Tu nombre">
+    <button type="button" onclick="crearUsuario()">Entrar al casino</button>
+    <p id="mensaje"></p>
   </div>
-<script src="menu.js"></script>
+
+  <div class="menu" id="menuBox" style="display:none;">
+    <a href="/ruleta.html"><button type="button">🎡 Ruleta</button></a>
+    <a href="/slots.html"><button type="button">🎰 Slots</button></a>
+  </div>
+
+  <script src="menu.js"></script>
 </body>
 </html>
