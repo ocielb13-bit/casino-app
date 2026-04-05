@@ -5,7 +5,11 @@
   <link rel="stylesheet" href="slots.css">
 </head>
 <body>
-
+<script>
+if (!localStorage.getItem("user")) {
+  window.location.href = "/";
+}
+</script>
 <div id="saldo">Saldo: 1000</div>
 
 <input type="number" id="apuesta" value="50">
