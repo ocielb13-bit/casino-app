@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html>
-<body style="background:blue;color:white;text-align:center;margin-top:100px;">
+<head>
+  <title>Login Casino</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-<h1>LOGIN</h1>
+<div class="login-box">
+  <h2>🎰 Casino Login</h2>
 
-<input type="text" id="name" placeholder="Usuario">
-<input type="password" id="pass" placeholder="Contraseña">
-<button onclick="login()">Entrar</button>
+  <input id="name" placeholder="Usuario">
+  <input id="pass" type="password" placeholder="Contraseña">
 
-<p id="mensaje"></p>
+  <button onclick="login()">Entrar</button>
 
-<script src="menu.js"></script>
+  <p id="msg"></p>
+</div>
 
-
+<script src="/login.js"></script>
 
 </body>
 </html>
