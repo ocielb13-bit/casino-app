@@ -1,10 +1,13 @@
-
 {
   "name": "casino-app",
   "version": "1.0.0",
+  "description": "Casino online con ruleta y slots",
   "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "express": "^4.18.2",
-    "@supabase/supabase-js": "^2.0.0"
+    "@supabase/supabase-js": "^2.39.0"
   }
 }
