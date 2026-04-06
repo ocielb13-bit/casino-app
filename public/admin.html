@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Panel</title>
+  <title>Admin</title>
 </head>
 <body>
 
 <h1>👑 Panel Admin</h1>
 
-<h3>Crear Usuario</h3>
-<input id="newUser" placeholder="Usuario">
-<input id="newPass" placeholder="Contraseña">
-<input id="newSaldo" type="number" placeholder="Saldo">
-<button onclick="crearUsuario()">Crear</button>
+<h3>Crear usuario</h3>
+<input id="user" placeholder="Usuario">
+<input id="pass" placeholder="Contraseña">
+<input id="saldo" type="number" placeholder="Saldo">
+<button onclick="crear()">Crear</button>
 
 <h3>Usuarios</h3>
-<button onclick="cargarUsuarios()">Cargar lista</button>
+<button onclick="cargar()">Ver usuarios</button>
+
 <ul id="lista"></ul>
 
-<script src="admin.js"></script>
+<script src="/admin.js"></script>
 
 </body>
 </html>
