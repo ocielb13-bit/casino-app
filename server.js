@@ -17,7 +17,8 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // LOGIN
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  const username = req.body.username.trim();
+  const password = req.body.password.trim();
 
   const { data, error } = await supabase
     .from("app_users")
@@ -41,7 +42,6 @@ app.post("/login", async (req, res) => {
     role: user.role
   });
 });
-
 
 
 // RULETA
