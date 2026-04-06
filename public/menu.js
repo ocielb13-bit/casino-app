@@ -4,23 +4,18 @@ async function login() {
 
   const res = await fetch("/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      username: username,
-      password: password
-    })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
   });
 
   const data = await res.json();
 
+  console.log(data);
+
   if (!data.success) {
-    alert("Usuario o contraseña incorrectos");
+    alert("Login incorrecto");
     return;
   }
 
-  localStorage.setItem("user", JSON.stringify(data));
-
-  window.location.href = "/menu.html";
+  alert("Login correcto 🎉");
 }
