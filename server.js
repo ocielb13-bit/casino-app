@@ -47,7 +47,28 @@ app.post("/get-balance", async (req, res) => {
 
   res.json({ balance: data.balance });
 });
+// ACTUALIZAR SALDO
+app.post("/update-balance", async (req, res) => {
+  const { username, amount } = req.body;
 
+  // obtener saldo actual
+  const { data } = await supabase
+    .from("app_users")
+    .select("balance")
+    .eq("username", username)
+    .single();
+
+  let nuevoSaldo = data.balance + amount;
+
+  if (nuevoSaldo < 0) nuevoSaldo = 0;
+
+  await supabase
+    .from("app_users")
+    .update({ balance: nuevoSaldo })
+    .eq("username", username);
+
+  res.json({ balance: nuevoSaldo });
+});
 // 👑 CREAR USUARIO
 app.post("/admin/create-user", async (req, res) => {
   const { username, password, balance } = req.body;
