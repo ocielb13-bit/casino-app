@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 const supabase = createClient(
   "https://zggvrzgumtbilqvoggco.supabase.co",
-  "TU-ANON-KEY"
+  "sb_publishable_5Juv5ZwoL7tfkGLpOkKGaw_a9jMUDAC"
 );
 
 app.use(express.json());
