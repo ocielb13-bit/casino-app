@@ -32,6 +32,22 @@ app.post("/login", async (req, res) => {
   });
 });
 
+app.post("/get-balance", async (req, res) => {
+  const { username } = req.body;
+
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("balance")
+    .eq("username", username)
+    .single();
+
+  if (error || !data) {
+    return res.json({ balance: 0 });
+  }
+
+  res.json({ balance: data.balance });
+});
+
 // 👑 CREAR USUARIO
 app.post("/admin/create-user", async (req, res) => {
   const { username, password, balance } = req.body;
