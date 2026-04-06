@@ -1,3 +1,9 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  "https://TU_URL.supabase.co",
+  "TU_ANON_KEY"
+);
 npm install @supabase/supabase-js
 const express = require("express");
 const cors = require("cors");
