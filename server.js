@@ -1,48 +1,65 @@
-const express = require("express");
-const path = require("path");
-const { createClient } = require("@supabase/supabase-js");
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
+// 🔑 Supabase
 const supabase = createClient(
   "https://zggvrzgumtbilqvoggco.supabase.co",
   "sb_publishable_5Juv5ZwoL7tfkGLpOkKGaw_a9jMUDAC"
 );
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+// 👇 👉 ACA VAN LAS RUTAS 👇
 
+// LOGIN
 app.post("/login", async (req, res) => {
-  const username = req.body.username.trim();
-  const password = req.body.password.trim();
-
-  console.log("LOGIN:", username, password);
+  const { username, password } = req.body;
 
   const { data, error } = await supabase
     .from("app_users")
     .select("*")
-    .eq("username", username);
+    .eq("username", username)
+    .eq("password", password)
+    .single();
 
-  console.log("DATA:", data, "ERROR:", error);
-
-  if (!data || data.length === 0) {
-    return res.json({ success: false });
-  }
-
-  const user = data[0];
-
-  if (user.password !== password) {
+  if (error || !data) {
     return res.json({ success: false });
   }
 
   res.json({
     success: true,
-    username: user.username,
-    balance: user.balance
+    role: data.role,
+    balance: data.balance
   });
 });
 
-app.listen(PORT, () => {
+// CREAR USUARIO
+app.post("/admin/create-user", async (req, res) => {
+  const { username, password, balance } = req.body;
+
+  await supabase.from("app_users").insert([
+    {
+      username,
+      password,
+      balance,
+      role: "user"
+    }
+  ]);
+
+  res.json({ success: true });
+});
+
+// LISTAR USUARIOS
+app.get("/admin/users", async (req, res) => {
+  const { data } = await supabase.from("app_users").select("*");
+  res.json(data);
+});
+
+// 👇 SI TENÉS OTRAS RUTAS (slots, ruleta), VAN ACÁ TAMBIÉN 👇
+
+
+// 🚀 SERVIDOR (SIEMPRE AL FINAL)
+app.listen(3000, () => {
   console.log("Servidor corriendo");
 });
