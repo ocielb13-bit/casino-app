@@ -1,84 +1,46 @@
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  "https://TU_URL.supabase.co",
-  "TU_ANON_KEY"
-);
-npm install @supabase/supabase-js
-const express = require("express");
-const cors = require("cors");
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 3000;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
 app.use(express.json());
-app.use(express.static("public"));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
-let users = {};
+function signToken(user) {
+  return jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
 
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+async function authRequired(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: 'No autenticado' });
 
-  const { data, error } = await supabase
-    .from("app_users")
-    .select("*")
-    .eq("username", username)
-    .eq("password", password)
-    .single();
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('id, username, role, balance')
+      .eq('id', payload.id)
+      .single();
 
-  if (error || !data) {
-    return res.json({ success: false });
-  }
+    if (error || !data) {
+      return res.status(401).json({ error: 'Usuario no válido' });
+    }
 
-  res.json({
-    success: true,
-    username: data.username,
-    balance: data.balance,
-    role: data.role
-  });
-});
-// Obtener saldo
-app.get("/balance/:name", (req, res) => {
-  res.json(users[req.params.name] || {});
-});
-
-
-app.post("/update-balance", async (req, res) => {
-  const { username, balance } = req.body;
-
-  const { error } = await supabase
-    .from("app_users")
-    .update({ balance: balance })
-    .eq("username", username);
-
-  if (error) {
-    return res.json({ success: false });
-  }
-
-  res.json({ success: true });
-});
-
-// Jugar ruleta
-app.post("/roulette", (req, res) => {
-  const { name, betNumber, amount } = req.body;
-
-  if (!users[name] || users[name].balance < amount) {
-    return res.status(400).json({ error: "Fondos insuficientes" });
-  }
-
-  const result = Math.floor(Math.random() * 37); // 0-36
-  let win = 0;
-
-  if (result === betNumber) {
-    win = amount * 35;
-  }
-
-  users[name].balance += win - amount;
-
-  res.json({
-    result,
-    win,
-    balance: users[name].balance
-  });
-});
-
-app.listen(3000, () => console.log("Servidor en http://localhost:3000"));
+    req.user = data;
+    next();
+  } catch
