@@ -1,3 +1,4 @@
+npm install @supabase/supabase-js
 const express = require("express");
 const cors = require("cors");
 
