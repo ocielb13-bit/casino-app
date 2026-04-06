@@ -1,83 +1,55 @@
-let user = localStorage.getItem("user") || "";
-let saldo = parseInt(localStorage.getItem("saldo") || "1000", 10);
+const user = localStorage.getItem("user");
 
-function actualizarSaldo() {
-  const saldoEl = document.getElementById("saldo");
-  if (saldoEl) {
-    saldoEl.innerText = "Saldo: " + saldo;
-  }
-  localStorage.setItem("saldo", String(saldo));
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  actualizarSaldo();
-
-  const nameInput = document.getElementById("name");
-  if (nameInput && user) {
-    nameInput.value = user;
-  }
-});
-
-
-    .then(res => res.json())
-    .then(() => {
-      actualizarSaldo();
-    })
-    .catch(err => {
-      console.error(err);
-      alert("No se pudo crear el usuario");
-    });
-}
-
-function jugar() {
-  const numeroEl = document.getElementById("numero");
-  const apuestaEl = document.getElementById("apuesta");
-  const resultadoEl = document.getElementById("resultado");
-
-  const numero = parseInt(numeroEl ? numeroEl.value : "", 10);
-  const apuesta = parseInt(apuestaEl ? apuestaEl.value : "", 10);
-
-  if (!user) {
-    alert("Primero poné tu nombre");
-    return;
-  }
-
-  if (Number.isNaN(numero) || Number.isNaN(apuesta) || apuesta <= 0) {
-    alert("Revisá el número y la apuesta");
-    return;
-  }
-
-  if (apuesta > saldo) {
-    alert("No tenés saldo suficiente");
-    return;
-  }
-
-  fetch("/roulette", {
+async function cargarSaldo() {
+  const res = await fetch("/get-balance", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: user,
-      betNumber: numero,
-      amount: apuesta
-    })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username: user })
+  });
 
-      saldo = data.balance;
-      actualizarSaldo();
-
-      if (resultadoEl) {
-        resultadoEl.innerText =
-          "Salió: " + data.result + " | Ganaste: " + data.win;
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error al jugar");
-    });
+  const data = await res.json();
+  document.getElementById("saldo").innerText = "💰 " + data.balance;
 }
+
+async function jugar() {
+  const numero = parseInt(document.getElementById("numero").value);
+  const apuesta = parseInt(document.getElementById("apuesta").value);
+
+  if (numero < 0 || numero > 36) return;
+  if (!apuesta || apuesta <= 0) return;
+
+  // restar apuesta
+  await fetch("/update-balance", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username: user, amount: -apuesta })
+  });
+
+  const resultado = Math.floor(Math.random() * 37);
+
+  let ganancia = 0;
+
+  if (resultado === numero) {
+    ganancia = apuesta * 36;
+  }
+
+  if (ganancia > 0) {
+    await fetch("/update-balance", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ username: user, amount: ganancia })
+    });
+  }
+
+  document.getElementById("resultado").innerText =
+    "Salió: " + resultado +
+    (ganancia ? " 🎉 Ganaste " + ganancia : " 😢 Perdiste");
+
+  cargarSaldo();
+}
+
+function volver() {
+  window.location.href = "/menu.html";
+}
+
+cargarSaldo();
