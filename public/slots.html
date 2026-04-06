@@ -1,7 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Slots PRO</title>
+
+  <style>
+    body {
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+
+    .slot-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 20px;
+    }
+
+    .row-section {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .center-reels {
+      display: flex;
+      gap: 20px;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .reel {
+      width: 70px;
+      height: 70px;
+      border: 2px solid gold;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      background: #111;
+    }
+
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
+
+</head>
+<body>
+
+<h1>🎰 Slots PRO</h1>
+
+<p id="saldo">Cargando...</p>
+
+<!-- 🎰 SLOT -->
 <div class="slot-container">
 
   <!-- TOP -->
-  <div class="row-section top-reels">
+  <div class="row-section">
     <div class="reel" id="tr1">❓</div>
     <div class="reel" id="tr2">❓</div>
     <div class="reel" id="tr3">❓</div>
@@ -29,10 +94,25 @@
   </div>
 
   <!-- BOTTOM -->
-  <div class="row-section bottom-reels">
+  <div class="row-section">
     <div class="reel" id="br1">❓</div>
     <div class="reel" id="br2">❓</div>
     <div class="reel" id="br3">❓</div>
   </div>
-<script src="/slots.js"></script>
+
 </div>
+
+<!-- 🎮 CONTROLES -->
+<input id="apuesta" type="number" placeholder="Apuesta">
+<br>
+<button onclick="jugar()">🎰 GIRAR</button>
+
+<p id="resultado"></p>
+
+<br>
+<button onclick="window.location.href='/menu.html'">⬅ Volver</button>
+
+<script src="/slots.js"></script>
+
+</body>
+</html>
