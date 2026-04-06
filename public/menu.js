@@ -20,9 +20,7 @@ async function login() {
     return;
   }
 
-  // guardar sesión
   localStorage.setItem("user", JSON.stringify(data));
 
-  // redirigir
   window.location.href = "/menu.html";
 }
