@@ -1,12 +1,10 @@
 async function login() {
-  console.log("CLICK");
-
   const username = document.getElementById("name").value;
   const password = document.getElementById("pass").value;
 
   const res = await fetch("/login", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
 
@@ -18,9 +16,8 @@ async function login() {
     if (data.role === "admin") {
       window.location.href = "/admin.html";
     } else {
-      alert("Login OK (usuario normal)");
+      window.location.href = "/menu.html";
     }
-
   } else {
     document.getElementById("msg").innerText = "❌ Datos incorrectos";
   }
