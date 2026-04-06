@@ -1,27 +1,30 @@
-async function login() {
-  const username = document.getElementById("name").value;
-  const password = document.getElementById("pass").value;
+const user = localStorage.getItem("user");
 
-  const res = await fetch("/login", {
+if (!user) {
+  window.location.href = "/";
+}
+
+async function cargarSaldo() {
+  const res = await fetch("/get-balance", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ username: user })
   });
 
   const data = await res.json();
 
-  if (data.success) {
-    localStorage.setItem("user", username);
-    localStorage.setItem("saldo", data.balance);
-
-    // 🔥 REDIRECCIÓN SEGÚN ROL
-    if (data.role === "admin") {
-      window.location.href = "/admin.html";
-    } else {
-      window.location.href = "/menu.html";
-    }
-
-  } else {
-    document.getElementById("mensaje").innerText = "❌ Login incorrecto";
-  }
+  document.getElementById("userText").innerText = "Usuario: " + user;
+  document.getElementById("saldo").innerText = "💰 Saldo: " + data.balance;
 }
+
+function irSlots() {
+  window.location.href = "/slots.html";
+}
+
+function irRuleta() {
+  window.location.href = "/ruleta.html";
+}
+
+window.addEventListener("DOMContentLoaded", cargarSaldo);
