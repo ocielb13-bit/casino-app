@@ -4,31 +4,26 @@ const simbolos = ["🍒", "🍋", "🍉", "⭐", "💎", "7️⃣", "🎁"];
 
 let jackpotAcumulado = 1000;
 let freeSpinsRestantes = 0;
+let gananciaFreeSpins = 0;
+let enFreeSpin = false;
 
 function girarVisual() {
   return simbolos[Math.floor(Math.random() * simbolos.length)];
 }
 
-// 🎨 RENDER
-function renderizar(resultados) {
+// 🎞️ ANIMACIÓN
+function animarRodillo(id, delay = 0) {
+  return new Promise(resolve => {
+    const interval = setInterval(() => {
+      document.getElementById(id).innerText = girarVisual();
+    }, 80);
 
-  // TOP
-  resultados.top.forEach((val, i) => {
-    document.getElementById(`tr${i + 1}`).innerText = val;
-  });
-
-  // CENTRO
-  resultados.c1.forEach((val, i) => {
-    document.getElementById(`c1_${i}`).innerText = val;
-  });
-
-  resultados.c2.forEach((val, i) => {
-    document.getElementById(`c2_${i}`).innerText = val;
-  });
-
-  // BOTTOM
-  resultados.bottom.forEach((val, i) => {
-    document.getElementById(`br${i + 1}`).innerText = val;
+    setTimeout(() => {
+      clearInterval(interval);
+      const final = girarVisual();
+      document.getElementById(id).innerText = final;
+      resolve(final);
+    }, 500 + delay);
   });
 }
 
@@ -36,39 +31,51 @@ async function jugar() {
   const apuestaBase = parseInt(document.getElementById("apuesta").value);
   if (!apuestaBase || apuestaBase <= 0) return;
 
-  if (freeSpinsRestantes === 0) {
-    await actualizarSaldo(-apuestaBase);
-  } else {
+  document.getElementById("spinSound").play();
+
+  if (freeSpinsRestantes > 0) {
+    enFreeSpin = true;
     freeSpinsRestantes--;
+  } else {
+    enFreeSpin = false;
+    await actualizarSaldo(-apuestaBase);
   }
 
-  // 🎰 GENERAR
-  const resultados = {
-    top: Array(3).fill().map(girarVisual),
-    c1: Array(5).fill().map(girarVisual),
-    c2: Array(5).fill().map(girarVisual),
-    bottom: Array(3).fill().map(girarVisual)
-  };
+  // 🎰 GIRO CON ANIMACIÓN
+  const top = await Promise.all([
+    animarRodillo("tr1", 0),
+    animarRodillo("tr2", 200),
+    animarRodillo("tr3", 400)
+  ]);
 
-  // 🎨 MOSTRAR
-  renderizar(resultados);
+  const c1 = [];
+  const c2 = [];
+
+  for (let i = 0; i < 5; i++) {
+    c1.push(await animarRodillo(`c1_${i}`, i * 100));
+    c2.push(await animarRodillo(`c2_${i}`, i * 100));
+  }
+
+  const bottom = await Promise.all([
+    animarRodillo("br1", 0),
+    animarRodillo("br2", 200),
+    animarRodillo("br3", 400)
+  ]);
+
+  const resultados = { top, c1, c2, bottom };
 
   let multiplicador = 0;
 
-  // 🔝 TOP x10
-  if (resultados.top.every(v => v === resultados.top[0])) {
-    multiplicador += 10;
-  }
+  // TOP x10
+  if (top.every(v => v === top[0])) multiplicador += 10;
 
-  // 🧱 COLUMNAS
-  resultados.c1.forEach((emoji, i) => {
-    if (emoji === resultados.c2[i]) {
-      multiplicador += 2;
-    }
+  // COLUMNAS
+  c1.forEach((emoji, i) => {
+    if (emoji === c2[i]) multiplicador += 2;
   });
 
-  // 💰 JACKPOT
-  if (resultados.bottom.every(v => v === "7️⃣")) {
+  // JACKPOT
+  if (bottom.every(v => v === "7️⃣")) {
     alert("¡JACKPOT! 🏆");
     multiplicador += jackpotAcumulado / apuestaBase;
     jackpotAcumulado = 1000;
@@ -76,36 +83,42 @@ async function jugar() {
     jackpotAcumulado += Math.floor(apuestaBase * 0.1);
   }
 
-  // 🎁 FREESPINS
-  const todos = [
-    ...resultados.top,
-    ...resultados.c1,
-    ...resultados.c2,
-    ...resultados.bottom
-  ];
-
+  // FREE SPINS
+  const todos = [...top, ...c1, ...c2, ...bottom];
   const scatters = todos.filter(e => e === "🎁").length;
 
   if (scatters >= 3) {
     freeSpinsRestantes += 5;
-    document.getElementById("resultado").innerText =
-      "🎁 ¡Ganaste 5 FREE SPINS!";
   }
 
-  // 💸 GANANCIA
   const gananciaTotal = apuestaBase * multiplicador;
 
   if (gananciaTotal > 0) {
-    await actualizarSaldo(gananciaTotal);
+    if (enFreeSpin) {
+      gananciaFreeSpins += gananciaTotal;
+    } else {
+      await actualizarSaldo(gananciaTotal);
+      document.getElementById("winSound").play();
+    }
   }
 
-  document.getElementById("resultado").innerText +=
-    ` | Ganancia: ${gananciaTotal}`;
+  // FIN FREE SPINS
+  if (enFreeSpin && freeSpinsRestantes === 0) {
+    await actualizarSaldo(gananciaFreeSpins);
+    document.getElementById("resultado").innerText =
+      `🌀 Free Spins terminados: +${gananciaFreeSpins}`;
+    gananciaFreeSpins = 0;
+  } else {
+    document.getElementById("resultado").innerText =
+      gananciaTotal > 0
+        ? `🎉 Ganaste ${gananciaTotal}`
+        : "😢 Perdiste";
+  }
 
   cargarSaldo();
 }
 
-// 🔄 SALDO
+// 💰 SALDO
 async function actualizarSaldo(monto) {
   await fetch("/update-balance", {
     method: "POST",
@@ -122,8 +135,9 @@ async function cargarSaldo() {
   });
 
   const data = await res.json();
+
   document.getElementById("saldo").innerText =
-    `💰 ${data.balance} | 🎁 Free: ${freeSpinsRestantes} | 🏆 Jackpot: ${jackpotAcumulado}`;
+    `💰 ${data.balance} | 🎁 ${freeSpinsRestantes} | 🏆 ${jackpotAcumulado}`;
 }
 
 cargarSaldo();
