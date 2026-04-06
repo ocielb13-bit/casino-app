@@ -1,7 +1,7 @@
-async function crearUsuario() {
-  const username = document.getElementById("newUser").value;
-  const password = document.getElementById("newPass").value;
-  const balance = parseInt(document.getElementById("newSaldo").value);
+async function crear() {
+  const username = document.getElementById("user").value;
+  const password = document.getElementById("pass").value;
+  const balance = parseInt(document.getElementById("saldo").value);
 
   await fetch("/admin/create-user", {
     method: "POST",
@@ -12,7 +12,7 @@ async function crearUsuario() {
   alert("Usuario creado");
 }
 
-async function cargarUsuarios() {
+async function cargar() {
   const res = await fetch("/admin/users");
   const data = await res.json();
 
