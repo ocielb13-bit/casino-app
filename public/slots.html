@@ -25,6 +25,14 @@
       gap: 8px;
     }
 
+    .top-row {
+      margin-left: 40px;
+    }
+
+    .bottom-row {
+      margin-left: 40px;
+    }
+
     .center-reels {
       display: flex;
       gap: 20px;
@@ -62,11 +70,10 @@
 
 <p id="saldo">Cargando...</p>
 
-<!-- 🎰 SLOT -->
 <div class="slot-container">
 
   <!-- TOP -->
-  <div class="row-section">
+  <div class="row-section top-row">
     <div class="reel" id="tr1">❓</div>
     <div class="reel" id="tr2">❓</div>
     <div class="reel" id="tr3">❓</div>
@@ -74,7 +81,6 @@
 
   <!-- CENTRO -->
   <div class="row-section center-reels">
-
     <div class="column">
       <div class="reel" id="c1_0">❓</div>
       <div class="reel" id="c1_1">❓</div>
@@ -90,11 +96,10 @@
       <div class="reel" id="c2_3">❓</div>
       <div class="reel" id="c2_4">❓</div>
     </div>
-
   </div>
 
   <!-- BOTTOM -->
-  <div class="row-section">
+  <div class="row-section bottom-row">
     <div class="reel" id="br1">❓</div>
     <div class="reel" id="br2">❓</div>
     <div class="reel" id="br3">❓</div>
@@ -102,7 +107,6 @@
 
 </div>
 
-<!-- 🎮 CONTROLES -->
 <input id="apuesta" type="number" placeholder="Apuesta">
 <br>
 <button onclick="jugar()">🎰 GIRAR</button>
@@ -111,6 +115,10 @@
 
 <br>
 <button onclick="window.location.href='/menu.html'">⬅ Volver</button>
+
+<!-- 🔊 SONIDOS -->
+<audio id="spinSound" src="https://www.myinstants.com/media/sounds/slot-machine.mp3"></audio>
+<audio id="winSound" src="https://www.myinstants.com/media/sounds/win.mp3"></audio>
 
 <script src="/slots.js"></script>
 
