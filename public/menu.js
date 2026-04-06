@@ -1,21 +1,28 @@
-function login() {
+async function login() {
   const username = document.getElementById("name").value;
-  const password = document.getElementById("pass").value;
+  const password = document.getElementById("password").value;
 
-  fetch("/login", {
+  const res = await fetch("/login", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ username, password })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      localStorage.setItem("user", data.username);
-      localStorage.setItem("saldo", data.balance);
-
-      window.location.href = "/menu.html";
-    } else {
-      alert("Usuario o contraseña incorrectos");
-    }
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      username: username,
+      password: password
+    })
   });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert("Usuario o contraseña incorrectos");
+    return;
+  }
+
+  // guardar sesión
+  localStorage.setItem("user", JSON.stringify(data));
+
+  // redirigir
+  window.location.href = "/menu.html";
 }
