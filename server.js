@@ -15,13 +15,27 @@ app.use(express.static("public"));
 
 let users = {};
 
-// Crear usuario
-app.post("/user", (req, res) => {
-  const { name } = req.body;
-  users[name] = { balance: 1000 };
-  res.json(users[name]);
-});
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
 
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("*")
+    .eq("username", username)
+    .eq("password", password)
+    .single();
+
+  if (error || !data) {
+    return res.json({ success: false });
+  }
+
+  res.json({
+    success: true,
+    username: data.username,
+    balance: data.balance,
+    role: data.role
+  });
+});
 // Obtener saldo
 app.get("/balance/:name", (req, res) => {
   res.json(users[req.params.name] || {});
