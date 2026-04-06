@@ -41,6 +41,22 @@ app.get("/balance/:name", (req, res) => {
   res.json(users[req.params.name] || {});
 });
 
+
+app.post("/update-balance", async (req, res) => {
+  const { username, balance } = req.body;
+
+  const { error } = await supabase
+    .from("app_users")
+    .update({ balance: balance })
+    .eq("username", username);
+
+  if (error) {
+    return res.json({ success: false });
+  }
+
+  res.json({ success: true });
+});
+
 // Jugar ruleta
 app.post("/roulette", (req, res) => {
   const { name, betNumber, amount } = req.body;
