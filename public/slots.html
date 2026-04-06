@@ -1,140 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
   <title>Slots</title>
-
-<style>
-body {
-  background: black;
-  color: white;
-  text-align: center;
-}
-
-.slot-machine {
-  display: flex;
-  justify-content: center;
-  margin: 20px;
-}
-
-.reel {
-  width: 100px;
-  height: 100px;
-  border: 3px solid gold;
-  margin: 10px;
-}
-
-.reel img {
-  width: 100%;
-  height: 100%;
-}
-
-button {
-  padding: 10px;
-  margin-top: 10px;
-}
-</style>
-
 </head>
 <body>
 
-<script>
-if (!localStorage.getItem("user")) {
-  window.location.href = "/";
-}
-</script>
-
 <h1>🎰 Slots</h1>
 
-<div id="saldo"></div>
+<p id="saldo">Saldo...</p>
 
-<input type="number" id="apuesta" value="50">
-<button onclick="spin()">Girar</button>
-
-<div class="slot-machine">
-  <div class="reel"><img id="r1"></div>
-  <div class="reel"><img id="r2"></div>
-  <div class="reel"><img id="r3"></div>
-</div>
+<input id="apuesta" type="number" placeholder="Apuesta">
+<button onclick="jugar()">Girar</button>
 
 <p id="resultado"></p>
 
-<a href="/"><button>⬅ Volver</button></a>
+<button onclick="volver()">⬅ Volver</button>
 
-<script>
-let saldo = parseInt(localStorage.getItem("saldo") || "0");
-
-function actualizarSaldo() {
-  document.getElementById("saldo").innerText = "Saldo: " + saldo;
-  localStorage.setItem("saldo", saldo);
-}
-
-window.onload = actualizarSaldo;
-
-// IMÁGENES FUNCIONANDO (NO FALLAN)
-const symbols = [
-  "https://upload.wikimedia.org/wikipedia/commons/7/7c/Red_Apple.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/3/36/Lemon.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/c/c4/Orange-Fruit-Pieces.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/5/5f/Diamond.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/2/2e/Gold_coin_icon.png"
-];
-
-function spin() {
-  let apuesta = parseInt(document.getElementById("apuesta").value);
-
-  if (apuesta > saldo) {
-    alert("No tenés saldo");
-    return;
-  }
-
-  saldo -= apuesta;
-  actualizarSaldo();
-
-  let r1 = randomSymbol();
-  let r2 = randomSymbol();
-  let r3 = randomSymbol();
-
-  spinReel("r1", r1, 20);
-  spinReel("r2", r2, 30);
-  spinReel("r3", r3, 40);
-
-  setTimeout(() => checkWin(r1, r2, r3, apuesta), 2000);
-}
-
-function randomSymbol() {
-  return symbols[Math.floor(Math.random() * symbols.length)];
-}
-
-function spinReel(id, final, spins) {
-  let reel = document.getElementById(id);
-  let count = 0;
-
-  let interval = setInterval(() => {
-    reel.src = randomSymbol();
-    count++;
-
-    if (count >= spins) {
-      clearInterval(interval);
-      reel.src = final;
-    }
-  }, 80);
-}
-
-function checkWin(r1, r2, r3, apuesta) {
-  if (r1 === r2 && r2 === r3) {
-    let premio = apuesta * 5;
-    saldo += premio;
-    document.getElementById("resultado").innerText =
-      "🎉 Ganaste " + premio;
-  } else {
-    document.getElementById("resultado").innerText =
-      "😢 Perdiste";
-  }
-
-  actualizarSaldo();
-}
-</script>
+<script src="/slots.js"></script>
 
 </body>
 </html>
