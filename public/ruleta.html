@@ -1,65 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
   <title>Ruleta</title>
 </head>
 <body>
 
-<script>
-if (!localStorage.getItem("user")) {
-  window.location.href = "/";
-}
-</script>
-
 <h1>🎡 Ruleta</h1>
 
-<div id="saldo"></div>
+<p id="saldo"></p>
 
-<input type="number" id="numero" placeholder="Número (0-36)">
-<input type="number" id="apuesta" value="50">
-<button onclick="jugar()">Jugar</button>
+<input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
+<input id="apuesta" type="number" placeholder="Apuesta">
+
+<button onclick="jugar()">Girar</button>
 
 <p id="resultado"></p>
 
-<a href="/"><button>⬅ Volver</button></a>
+<button onclick="volver()">⬅ Volver</button>
 
-<script>
-let saldo = parseInt(localStorage.getItem("saldo") || "0");
-
-function actualizarSaldo() {
-  document.getElementById("saldo").innerText = "Saldo: " + saldo;
-  localStorage.setItem("saldo", saldo);
-}
-
-window.onload = actualizarSaldo;
-
-function jugar() {
-  let numero = parseInt(document.getElementById("numero").value);
-  let apuesta = parseInt(document.getElementById("apuesta").value);
-
-  if (apuesta > saldo) {
-    alert("No tenés saldo");
-    return;
-  }
-
-  let resultado = Math.floor(Math.random() * 37);
-
-  saldo -= apuesta;
-
-  if (numero === resultado) {
-    let premio = apuesta * 10;
-    saldo += premio;
-    document.getElementById("resultado").innerText =
-      "Salió " + resultado + " 🎉 Ganaste " + premio;
-  } else {
-    document.getElementById("resultado").innerText =
-      "Salió " + resultado + " 😢 Perdiste";
-  }
-
-  actualizarSaldo();
-}
-</script>
+<script src="/ruleta.js"></script>
 
 </body>
 </html>
