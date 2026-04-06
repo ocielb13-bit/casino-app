@@ -1,54 +1,38 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Slots</title>
-  <style>
-    body {
-      background: black;
-      color: white;
-      text-align: center;
-      font-family: Arial;
-    }
+<div class="slot-container">
 
-    .reels {
-      display: flex;
-      justify-content: center;
-      margin: 20px;
-      font-size: 50px;
-    }
+  <!-- TOP -->
+  <div class="row-section top-reels">
+    <div class="reel" id="tr1">❓</div>
+    <div class="reel" id="tr2">❓</div>
+    <div class="reel" id="tr3">❓</div>
+  </div>
 
-    .reel {
-      width: 80px;
-      height: 80px;
-      border: 2px solid gold;
-      margin: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #111;
-    }
-  </style>
-</head>
-<body>
+  <!-- CENTRO -->
+  <div class="row-section center-reels">
 
-<h1>🎰 Slots</h1>
+    <div class="column">
+      <div class="reel" id="c1_0">❓</div>
+      <div class="reel" id="c1_1">❓</div>
+      <div class="reel" id="c1_2">❓</div>
+      <div class="reel" id="c1_3">❓</div>
+      <div class="reel" id="c1_4">❓</div>
+    </div>
 
-<p id="saldo"></p>
+    <div class="column">
+      <div class="reel" id="c2_0">❓</div>
+      <div class="reel" id="c2_1">❓</div>
+      <div class="reel" id="c2_2">❓</div>
+      <div class="reel" id="c2_3">❓</div>
+      <div class="reel" id="c2_4">❓</div>
+    </div>
 
-<div class="reels">
-  <div class="reel" id="r1">❓</div>
-  <div class="reel" id="r2">❓</div>
-  <div class="reel" id="r3">❓</div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="row-section bottom-reels">
+    <div class="reel" id="br1">❓</div>
+    <div class="reel" id="br2">❓</div>
+    <div class="reel" id="br3">❓</div>
+  </div>
+
 </div>
-
-<input id="apuesta" type="number" placeholder="Apuesta">
-<button onclick="jugar()">Girar</button>
-
-<p id="resultado"></p>
-
-<button onclick="volver()">⬅ Volver</button>
-
-<script src="/slots.js"></script>
-
-</body>
-</html>
