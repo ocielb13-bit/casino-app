@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const supabase = createClient(
-  "https://TU-PROYECTO.supabase.co",
+  "https://zggvrzgumtbilqvoggco.supabase.co",
   "TU-ANON-KEY"
 );
 
