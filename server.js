@@ -22,21 +22,26 @@ app.post("/login", async (req, res) => {
   const { data, error } = await supabase
     .from("app_users")
     .select("*")
-    .eq("username", username)
-    .eq("password", password)
-    .single();
+    .eq("username", username);
 
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
+    return res.json({ success: false });
+  }
+
+  const user = data[0];
+
+  if (user.password !== password) {
     return res.json({ success: false });
   }
 
   res.json({
     success: true,
-    username: data.username,
-    balance: data.balance,
-    role: data.role
+    username: user.username,
+    balance: user.balance,
+    role: user.role
   });
 });
+
 
 
 // RULETA
