@@ -1,484 +1,243 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Slots Asian Dragon</title>
+// slots.js - Asian Dragon visual, sin pagos por frontend
 
-  <style>
-    /* slots.html - layout 3 / 5 / 5 / 3 con imágenes reales */
-    body {
-      margin: 0;
-      background: radial-gradient(circle at top, #111b2b 0%, #05070a 65%, #020304 100%);
-      color: white;
-      text-align: center;
-      font-family: Arial, Helvetica, sans-serif;
+async function api(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options
+  });
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    throw new Error(data.error || "Error");
+  }
+
+  return data;
+}
+
+const CELL_IDS = {
+  top: ["tr1", "tr2", "tr3"],
+  row1: ["c1_0", "c1_1", "c1_2", "c1_3", "c1_4"],
+  row2: ["c2_0", "c2_1", "c2_2", "c2_3", "c2_4"],
+  bottom: ["br1", "br2", "br3"]
+};
+
+const SYMBOLS = ["dragon", "goldpot", "coin", "jade", "lantern", "wild", "scatter"];
+
+let playing = false;
+let saldoActual = 0;
+let username = "";
+let jackpotAcumulado = 1000;
+let freeSpinsRestantes = 0;
+let freeSpinBank = 0;
+
+function symbolSrc(symbolId) {
+  return `/assets/symbols/asian/${symbolId}.png`;
+}
+
+function randomSymbol() {
+  const weights = [
+    ...Array(14).fill("dragon"),
+    ...Array(12).fill("goldpot"),
+    ...Array(18).fill("coin"),
+    ...Array(18).fill("jade"),
+    ...Array(16).fill("lantern"),
+    ...Array(7).fill("wild"),
+    ...Array(3).fill("scatter")
+  ];
+  return weights[Math.floor(Math.random() * weights.length)];
+}
+
+function setCell(id, symbolId) {
+  const img = document.getElementById(`img-${id}`);
+  if (!img) return;
+  img.src = symbolSrc(symbolId);
+  img.alt = symbolId;
+}
+
+function renderBoard(board) {
+  Object.keys(board).forEach((id) => setCell(id, board[id]));
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function showBalance() {
+  setText("saldo", saldoActual);
+  setText("freeLine", freeSpinsRestantes);
+  setText("bankLine", freeSpinBank);
+  setText("jackpotLine", jackpotAcumulado);
+}
+
+function resetHighlights() {
+  document.querySelectorAll(".reel").forEach((el) => {
+    el.className = "reel";
+  });
+}
+
+function highlightCells(ids, className) {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add(className);
+  });
+}
+
+function clearInfo() {
+  setText("resultado", "");
+  setText("detallePago", "");
+  setText("bonusHint", "");
+}
+
+function initialBoard() {
+  const board = {};
+  [...CELL_IDS.top, ...CELL_IDS.row1, ...CELL_IDS.row2, ...CELL_IDS.bottom].forEach((id) => {
+    board[id] = randomSymbol();
+  });
+  return board;
+}
+
+async function loadSession() {
+  const me = await api("/api/me");
+
+  if (me.role === "admin") {
+    window.location.href = "/admin.html";
+    return;
+  }
+
+  username = me.username;
+  saldoActual = Number(me.balance || 0);
+  freeSpinsRestantes = Number(me.free_spins || 0);
+  freeSpinBank = Number(me.free_spin_bank || 0);
+
+  setText("playerLine", `Usuario: ${username}`);
+  showBalance();
+}
+
+async function animateGroup(cellIds, finalMap, duration, tick) {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      cellIds.forEach((cellId) => {
+        setCell(cellId, randomSymbol());
+      });
+    }, tick);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      cellIds.forEach((cellId) => {
+        setCell(cellId, finalMap[cellId]);
+      });
+      resolve(true);
+    }, duration);
+  });
+}
+
+function playSound(id) {
+  const audio = document.getElementById(id);
+  if (!audio) return;
+  try {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  } catch {}
+}
+
+function applyOutcome(res) {
+  saldoActual = Number(res.balance || saldoActual);
+  freeSpinsRestantes = Number(res.freeSpinsRemaining || 0);
+  freeSpinBank = Number(res.freeSpinBank || 0);
+  jackpotAcumulado = Number(res.jackpotBank || jackpotAcumulado);
+
+  showBalance();
+
+  if (res.spinWinRaw > 0) {
+    setText("resultado", `🎉 Ganaste ${res.spinWinRaw}`);
+    playSound("winSound");
+  } else {
+    setText("resultado", "😢 Sin premio");
+  }
+
+  if (res.creditedNow > 0) {
+    setText("detallePago", `Saldo agregado: ${res.creditedNow}`);
+  } else {
+    setText("detallePago", "Sin pago");
+  }
+
+  if (res.scatterCount === 2) {
+    setText("bonusHint", "✨ Hay 2 scatters. Falta 1 para free spins.");
+    highlightCells(res.scatterCells, "scatter-hint");
+  } else if (res.freeSpinsAwarded > 0) {
+    setText("bonusHint", `🌀 Free spins activados (+${res.freeSpinsAwarded}).`);
+    highlightCells(res.scatterCells, "free-hint");
+  } else {
+    setText("bonusHint", "");
+  }
+
+  if (Array.isArray(res.paylines)) {
+    res.paylines.forEach((line) => {
+      highlightCells(line.ids, line.tier || "win-mid");
+    });
+
+    if (res.paylines.length > 0) {
+      setText(
+        "detallePago",
+        res.paylines.map((p) => `${p.label} +${p.amount}`).join(" • ")
+      );
+    }
+  }
+}
+
+async function jugar() {
+  if (playing) return;
+  playing = true;
+
+  try {
+    const apuesta = parseInt(document.getElementById("apuesta").value, 10);
+    if (!Number.isInteger(apuesta) || apuesta <= 0) {
+      setText("resultado", "Apuesta inválida");
+      return;
     }
 
-    .machine {
-      max-width: 980px;
-      margin: 18px auto;
-      padding: 18px;
-      border-radius: 26px;
-      background: rgba(8, 12, 18, 0.92);
-      border: 1px solid rgba(255, 215, 0, 0.22);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-    }
-
-    .kpi {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin: 12px 0 16px;
-    }
-
-    .pill {
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .slot-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      margin: 20px auto 12px;
-      padding: 14px;
-      border-radius: 24px;
-      border: 1px solid rgba(255, 215, 0, 0.18);
-      background: linear-gradient(180deg, rgba(17, 25, 38, 0.92), rgba(8, 10, 15, 0.98));
-    }
-
-    .row-section,
-    .row {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .top-row {
-      margin-left: 42px;
-    }
-
-    .bottom-row {
-      margin-left: 42px;
-    }
-
-    .center-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .reel {
-      width: clamp(54px, 12vw, 86px);
-      height: clamp(54px, 12vw, 86px);
-      border: 2px solid rgba(255, 215, 0, 0.72);
-      border-radius: 16px;
-      overflow: hidden;
-      background: linear-gradient(180deg, #121212, #1d1d1d);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      position: relative;
-    }
-
-    .reel img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .reel.win-low {
-      border-color: #55d8ff;
-      box-shadow: 0 0 14px rgba(85, 216, 255, 0.78);
-    }
-
-    .reel.win-mid {
-      border-color: #bb6dff;
-      box-shadow: 0 0 16px rgba(187, 109, 255, 0.85);
-    }
-
-    .reel.win-high {
-      border-color: #ffd04a;
-      box-shadow: 0 0 20px rgba(255, 208, 74, 0.95);
-    }
-
-    .reel.win-jackpot {
-      border-color: #ff4d4d;
-      box-shadow: 0 0 24px rgba(255, 77, 77, 1);
-      animation: jackpotPulse 0.9s infinite alternate;
-    }
-
-    .reel.scatter-hint {
-      border-color: #f1ff6e;
-      box-shadow: 0 0 16px rgba(241, 255, 110, 0.88);
-    }
-
-    .reel.free-hint {
-      border-color: #67ffd7;
-      box-shadow: 0 0 16px rgba(103, 255, 215, 0.88);
-    }
-
-    @keyframes jackpotPulse {
-      from { transform: scale(1); }
-      to { transform: scale(1.035); }
-    }
-
-    .controls {
-      margin-top: 14px;
-    }
-
-    input, button {
-      width: min(100%, 420px);
-      margin: 8px auto;
-      padding: 12px 14px;
-      display: block;
-      border-radius: 14px;
-      border: none;
-      font-size: 16px;
-    }
-
-    input {
-      background: #0f1623;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    button {
-      background: linear-gradient(180deg, #ffdf7a 0%, #d79d15 100%);
-      color: #1b1200;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    button.secondary {
-      background: #182132;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .info {
-      margin-top: 14px;
-      min-height: 26px;
-    }
-
-    .info-line {
-      margin: 6px 0;
-      min-height: 24px;
-    }
-
-    .muted {
-      color: #9aa4b2;
-      font-size: 14px;
-    }
-
-    .bonus-hint {
-      color: #f4ff6b;
-      font-weight: 700;
-      min-height: 24px;
-    }
-
-    .pay-lines {
-      margin-top: 8px;
-      color: #dfe9ff;
-      font-size: 14px;
-      min-height: 24px;
-    }
-  </style>
-</head>
-<body>
-  <div class="machine">
-    <h1>🎰 Slots Asian Dragon</h1>
-    <p id="playerLine" class="muted"></p>
-
-    <div class="kpi">
-      <div class="pill">Saldo: <strong id="saldo">0</strong></div>
-      <div class="pill">Free spins: <strong id="freeLine">0</strong></div>
-      <div class="pill">Banco free: <strong id="bankLine">0</strong></div>
-      <div class="pill">Jackpot: <strong id="jackpotLine">1000</strong></div>
-    </div>
-
-    <div class="slot-container">
-      <!-- TOP / 3 -->
-      <div class="row-section top-row">
-        <div class="reel" id="tr1"><img id="img-tr1" alt=""></div>
-        <div class="reel" id="tr2"><img id="img-tr2" alt=""></div>
-        <div class="reel" id="tr3"><img id="img-tr3" alt=""></div>
-      </div>
-
-      <!-- CENTRO / 5 + 5 -->
-      <div class="center-grid">
-        <div class="row">
-          <div class="reel" id="c1_0"><img id="img-c1_0" alt=""></div>
-          <div class="reel" id="c1_1"><img id="img-c1_1" alt=""></div>
-          <div class="reel" id="c1_2"><img id="img-c1_2" alt=""></div>
-          <div class="reel" id="c1_3"><img id="img-c1_3" alt=""></div>
-          <div class="reel" id="c1_4"><img id="img-c1_4" alt=""></div>
-        </div>
-
-        <div class="row">
-          <div class="reel" id="c2_0"><img id="img-c2_0" alt=""></div>
-          <div class="reel" id="c2_1"><img id="img-c2_1" alt=""></div>
-          <div class="reel" id="c2_2"><img id="img-c2_2" alt=""></div>
-          <div class="reel" id="c2_3"><img id="img-c2_3" alt=""></div>
-          <div class="reel" id="c2_4"><img id="img-c2_4" alt=""></div>
-        </div>
-      </div>
-
-      <!-- BOTTOM / 3 -->
-      <div class="row-section bottom-row">
-        <div class="reel" id="br1"><img id="img-br1" alt=""></div>
-        <div class="reel" id="br2"><img id="img-br2" alt=""></div>
-        <div class="reel" id="br3"><img id="img-br3" alt=""></div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <input id="apuesta" type="number" min="1" placeholder="Apuesta">
-      <button id="spinBtn" type="button" onclick="jugar()">🎰 GIRAR</button>
-      <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
-    </div>
-
-    <div class="info">
-      <div id="resultado" class="info-line"></div>
-      <div id="detallePago" class="pay-lines"></div>
-      <div id="bonusHint" class="bonus-hint"></div>
-    </div>
-  </div>
-
-  <script src="/slots.js"></script>
-</body>
-</html>      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .slot-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      margin: 20px auto 12px;
-      padding: 14px;
-      border-radius: 24px;
-      border: 1px solid rgba(255, 215, 0, 0.18);
-      background: linear-gradient(180deg, rgba(17, 25, 38, 0.92), rgba(8, 10, 15, 0.98));
-    }
-
-    .row-section,
-    .row {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .top-row {
-      margin-left: 42px;
-    }
-
-    .bottom-row {
-      margin-left: 42px;
-    }
-
-    .center-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .reel {
-      width: 94px;
-      height: 94px;
-      border: 2px solid rgba(255, 215, 0, 0.72);
-      border-radius: 16px;
-      overflow: hidden;
-      background: linear-gradient(180deg, #121212, #1d1d1d);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      position: relative;
-    }
-
-    .reel img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .reel.win-low {
-      border-color: #55d8ff;
-      box-shadow: 0 0 14px rgba(85, 216, 255, 0.78);
-    }
-
-    .reel.win-mid {
-      border-color: #bb6dff;
-      box-shadow: 0 0 16px rgba(187, 109, 255, 0.85);
-    }
-
-    .reel.win-high {
-      border-color: #ffd04a;
-      box-shadow: 0 0 20px rgba(255, 208, 74, 0.95);
-    }
-
-    .reel.win-jackpot {
-      border-color: #ff4d4d;
-      box-shadow: 0 0 24px rgba(255, 77, 77, 1);
-      animation: jackpotPulse 0.9s infinite alternate;
-    }
-
-    .reel.scatter-hint {
-      border-color: #f1ff6e;
-      box-shadow: 0 0 16px rgba(241, 255, 110, 0.88);
-    }
-
-    .reel.free-hint {
-      border-color: #67ffd7;
-      box-shadow: 0 0 16px rgba(103, 255, 215, 0.88);
-    }
-
-    @keyframes jackpotPulse {
-      from { transform: scale(1); }
-      to { transform: scale(1.035); }
-    }
-
-    .controls {
-      margin-top: 14px;
-    }
-
-    input, select, button {
-      width: min(100%, 420px);
-      margin: 8px auto;
-      padding: 12px 14px;
-      display: block;
-      border-radius: 14px;
-      border: none;
-      font-size: 16px;
-    }
-
-    input, select {
-      background: #0f1623;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    button {
-      background: linear-gradient(180deg, #ffdf7a 0%, #d79d15 100%);
-      color: #1b1200;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    button.secondary {
-      background: #182132;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .info {
-      margin-top: 14px;
-      min-height: 26px;
-    }
-
-    .info-line {
-      margin: 6px 0;
-      min-height: 24px;
-    }
-
-    .muted {
-      color: #9aa4b2;
-      font-size: 14px;
-    }
-
-    .bonus-hint {
-      color: #f4ff6b;
-      font-weight: 700;
-    }
-
-    .pay-lines {
-      margin-top: 8px;
-      color: #dfe9ff;
-      font-size: 14px;
-      min-height: 24px;
-    }
-  </style>
-</head>
-<body>
-  <div class="machine">
-    <h1>🎰 Slots PRO</h1>
-    <p id="playerLine" class="muted"></p>
-
-    <div class="kpi">
-      <div class="pill">Saldo: <strong id="saldo">0</strong></div>
-      <div class="pill">Free spins: <strong id="freeLine">0</strong></div>
-      <div class="pill">Banco free: <strong id="bankLine">0</strong></div>
-      <div class="pill">Jackpot: <strong id="jackpotLine">1000</strong></div>
-    </div>
-
-    <div class="controls">
-      <select id="theme">
-        <option value="asian">Asian Dragon</option>
-        <option value="classic">Clásico</option>
-        <option value="fruits">Frutas</option>
-      </select>
-    </div>
-
-    <div class="slot-container">
-      <!-- TOP / 3 -->
-      <div class="row-section top-row">
-        <div class="reel" id="tr1"><img id="img-tr1" alt=""></div>
-        <div class="reel" id="tr2"><img id="img-tr2" alt=""></div>
-        <div class="reel" id="tr3"><img id="img-tr3" alt=""></div>
-      </div>
-
-      <!-- CENTRO / 5 + 5 -->
-      <div class="center-grid">
-        <div class="row">
-          <div class="reel" id="c1_0"><img id="img-c1_0" alt=""></div>
-          <div class="reel" id="c1_1"><img id="img-c1_1" alt=""></div>
-          <div class="reel" id="c1_2"><img id="img-c1_2" alt=""></div>
-          <div class="reel" id="c1_3"><img id="img-c1_3" alt=""></div>
-          <div class="reel" id="c1_4"><img id="img-c1_4" alt=""></div>
-        </div>
-
-        <div class="row">
-          <div class="reel" id="c2_0"><img id="img-c2_0" alt=""></div>
-          <div class="reel" id="c2_1"><img id="img-c2_1" alt=""></div>
-          <div class="reel" id="c2_2"><img id="img-c2_2" alt=""></div>
-          <div class="reel" id="c2_3"><img id="img-c2_3" alt=""></div>
-          <div class="reel" id="c2_4"><img id="img-c2_4" alt=""></div>
-        </div>
-      </div>
-
-      <!-- BOTTOM / 3 -->
-      <div class="row-section bottom-row">
-        <div class="reel" id="br1"><img id="img-br1" alt=""></div>
-        <div class="reel" id="br2"><img id="img-br2" alt=""></div>
-        <div class="reel" id="br3"><img id="img-br3" alt=""></div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <input id="apuesta" type="number" min="1" placeholder="Apuesta">
-      <button id="spinBtn" type="button" onclick="jugar()">🎰 GIRAR</button>
-      <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
-    </div>
-
-    <div class="info">
-      <div id="resultado" class="info-line"></div>
-      <div id="detallePago" class="pay-lines"></div>
-      <div id="bonusHint" class="bonus-hint"></div>
-    </div>
-  </div>
-
-  <script src="/slots.js"></script>
-</body>
-</html>
+    const spinBtn = document.getElementById("spinBtn");
+    spinBtn.disabled = true;
+
+    resetHighlights();
+    clearInfo();
+
+    const res = await api("/api/slots/spin", {
+      method: "POST",
+      body: JSON.stringify({
+        amount: apuesta,
+        theme: "asian"
+      })
+    });
+
+    // animación por grupos, no por casillas sueltas
+    await Promise.all([
+      animateGroup(CELL_IDS.top, res.board, 650, 60),
+      animateGroup(CELL_IDS.row1, res.board, 850, 60),
+      animateGroup(CELL_IDS.row2, res.board, 980, 60),
+      animateGroup(CELL_IDS.bottom, res.board, 760, 60)
+    ]);
+
+    renderBoard(res.board);
+    applyOutcome(res);
+  } catch (err) {
+    setText("resultado", "❌ " + err.message);
+  } finally {
+    document.getElementById("spinBtn").disabled = false;
+    playing = false;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await loadSession();
+    renderBoard(initialBoard());
+  } catch {
+    window.location.href = "/";
+  }
+});
