@@ -1,24 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ruleta</title>
+  <link rel="stylesheet" href="/style.css">
+
+  <style>
+    /* ruleta.html - visual simple */
+    .wheel-box {
+      width: 220px;
+      height: 220px;
+      margin: 18px auto;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, #1f2a3e 0%, #0f131c 60%, #050608 100%);
+      border: 8px solid rgba(255, 215, 0, 0.55);
+      box-shadow: 0 0 24px rgba(255, 215, 0, 0.18);
+      font-size: 72px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .wheel-box.spinning {
+      animation: pulse 0.25s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.03); }
+    }
+
+    .mini {
+      font-size: 14px;
+      color: #9aa4b2;
+    }
+  </style>
 </head>
 <body>
+  <div class="page">
+    <div class="card" style="max-width: 520px;">
+      <h1>🎡 Ruleta</h1>
+      <p id="playerLine" class="muted"></p>
 
-<h1>🎡 Ruleta</h1>
+      <div class="kpi">
+        <div class="pill">Saldo: <strong id="saldo">0</strong></div>
+      </div>
 
-<p id="saldo"></p>
+      <div id="wheel" class="wheel-box">0</div>
+      <p class="mini">Elegí un número del 0 al 36 y probá suerte.</p>
 
-<input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
-<input id="apuesta" type="number" placeholder="Apuesta">
+      <input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
+      <input id="apuesta" type="number" min="1" placeholder="Apuesta">
 
-<button onclick="jugar()">Girar</button>
+      <button type="button" onclick="jugar()">Girar</button>
+      <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
 
-<p id="resultado"></p>
+      <p id="resultado"></p>
+    </div>
+  </div>
 
-<button onclick="volver()">⬅ Volver</button>
-
-<script src="/ruleta.js"></script>
-
+  <script src="/ruleta.js"></script>
 </body>
 </html>
