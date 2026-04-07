@@ -181,13 +181,26 @@ function showBalance() {
 }
 
 async function loadSession() {
-  const me = await api("/api/me");
-  session = me;
+  const user = localStorage.getItem("user");
 
-  if (me.role === "admin") {
-    window.location.href = "/admin.html";
+  if (!user) {
+    window.location.href = "/";
     return;
   }
+
+  const res = await fetch("/get-balance", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username: user })
+  });
+
+  const data = await res.json();
+
+  saldoActual = data.balance || 0;
+
+  document.getElementById("playerLine").innerText = `Usuario: ${user}`;
+  showBalance();
+}
 
   saldoActual = Number(me.balance || 0);
   freeSpinsRestantes = Number(me.free_spins || 0);
