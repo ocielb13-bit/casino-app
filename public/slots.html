@@ -1,14 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Slots PRO</title>
 
   <style>
+    /* slots.html - layout 3 / 5 / 5 / 3 con imágenes y luces */
     body {
-      background: black;
+      margin: 0;
+      background: radial-gradient(circle at top, #111b2b 0%, #05070a 65%, #020304 100%);
       color: white;
       text-align: center;
-      font-family: Arial;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .machine {
+      max-width: 980px;
+      margin: 18px auto;
+      padding: 18px;
+      border-radius: 26px;
+      background: rgba(8, 12, 18, 0.92);
+      border: 1px solid rgba(255, 215, 0, 0.22);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    .kpi {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .slot-container {
@@ -16,117 +45,220 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      margin: 20px;
+      margin: 20px auto 12px;
+      padding: 14px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 215, 0, 0.18);
+      background: linear-gradient(180deg, rgba(17, 25, 38, 0.92), rgba(8, 10, 15, 0.98));
     }
 
-    .row-section {
+    .row-section,
+    .row {
       display: flex;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .top-row {
-      margin-left: 40px;
+      margin-left: 42px;
     }
 
     .bottom-row {
-      margin-left: 40px;
+      margin-left: 42px;
     }
 
-    /* 🔥 CORRECCIÓN IMPORTANTE */
     .center-grid {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    .row {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-    }
-
     .reel {
-      width: 70px;
-      height: 70px;
-      border: 2px solid gold;
-      border-radius: 10px;
+      width: 94px;
+      height: 94px;
+      border: 2px solid rgba(255, 215, 0, 0.72);
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #121212, #1d1d1d);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 30px;
-      background: #111;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      position: relative;
     }
 
-    input, button {
-      margin: 10px;
-      padding: 10px;
+    .reel img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .reel.win-low {
+      border-color: #55d8ff;
+      box-shadow: 0 0 14px rgba(85, 216, 255, 0.78);
+    }
+
+    .reel.win-mid {
+      border-color: #bb6dff;
+      box-shadow: 0 0 16px rgba(187, 109, 255, 0.85);
+    }
+
+    .reel.win-high {
+      border-color: #ffd04a;
+      box-shadow: 0 0 20px rgba(255, 208, 74, 0.95);
+    }
+
+    .reel.win-jackpot {
+      border-color: #ff4d4d;
+      box-shadow: 0 0 24px rgba(255, 77, 77, 1);
+      animation: jackpotPulse 0.9s infinite alternate;
+    }
+
+    .reel.scatter-hint {
+      border-color: #f1ff6e;
+      box-shadow: 0 0 16px rgba(241, 255, 110, 0.88);
+    }
+
+    .reel.free-hint {
+      border-color: #67ffd7;
+      box-shadow: 0 0 16px rgba(103, 255, 215, 0.88);
+    }
+
+    @keyframes jackpotPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.035); }
+    }
+
+    .controls {
+      margin-top: 14px;
+    }
+
+    input, select, button {
+      width: min(100%, 420px);
+      margin: 8px auto;
+      padding: 12px 14px;
+      display: block;
+      border-radius: 14px;
+      border: none;
       font-size: 16px;
     }
-  </style>
 
+    input, select {
+      background: #0f1623;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    button {
+      background: linear-gradient(180deg, #ffdf7a 0%, #d79d15 100%);
+      color: #1b1200;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #182132;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .info {
+      margin-top: 14px;
+      min-height: 26px;
+    }
+
+    .info-line {
+      margin: 6px 0;
+      min-height: 24px;
+    }
+
+    .muted {
+      color: #9aa4b2;
+      font-size: 14px;
+    }
+
+    .bonus-hint {
+      color: #f4ff6b;
+      font-weight: 700;
+    }
+
+    .pay-lines {
+      margin-top: 8px;
+      color: #dfe9ff;
+      font-size: 14px;
+      min-height: 24px;
+    }
+  </style>
 </head>
 <body>
+  <div class="machine">
+    <h1>🎰 Slots PRO</h1>
+    <p id="playerLine" class="muted"></p>
 
-<h1>🎰 Slots PRO</h1>
-
-<p id="saldo">Cargando...</p>
-
-<div class="slot-container">
-
-  <!-- TOP -->
-  <div class="row-section top-row">
-    <div class="reel" id="tr1">❓</div>
-    <div class="reel" id="tr2">❓</div>
-    <div class="reel" id="tr3">❓</div>
-  </div>
-
-  <!-- CENTRO -->
-  <div class="center-grid">
-
-    <!-- FILA 1 -->
-    <div class="row">
-      <div class="reel" id="c1_0">❓</div>
-      <div class="reel" id="c1_1">❓</div>
-      <div class="reel" id="c1_2">❓</div>
-      <div class="reel" id="c1_3">❓</div>
-      <div class="reel" id="c1_4">❓</div>
+    <div class="kpi">
+      <div class="pill">Saldo: <strong id="saldo">0</strong></div>
+      <div class="pill">Free spins: <strong id="freeLine">0</strong></div>
+      <div class="pill">Banco free: <strong id="bankLine">0</strong></div>
+      <div class="pill">Jackpot: <strong id="jackpotLine">1000</strong></div>
     </div>
 
-    <!-- FILA 2 -->
-    <div class="row">
-      <div class="reel" id="c2_0">❓</div>
-      <div class="reel" id="c2_1">❓</div>
-      <div class="reel" id="c2_2">❓</div>
-      <div class="reel" id="c2_3">❓</div>
-      <div class="reel" id="c2_4">❓</div>
+    <div class="controls">
+      <select id="theme">
+        <option value="asian">Asian Dragon</option>
+        <option value="classic">Clásico</option>
+        <option value="fruits">Frutas</option>
+      </select>
     </div>
 
+    <div class="slot-container">
+      <!-- TOP / 3 -->
+      <div class="row-section top-row">
+        <div class="reel" id="tr1"><img id="img-tr1" alt=""></div>
+        <div class="reel" id="tr2"><img id="img-tr2" alt=""></div>
+        <div class="reel" id="tr3"><img id="img-tr3" alt=""></div>
+      </div>
+
+      <!-- CENTRO / 5 + 5 -->
+      <div class="center-grid">
+        <div class="row">
+          <div class="reel" id="c1_0"><img id="img-c1_0" alt=""></div>
+          <div class="reel" id="c1_1"><img id="img-c1_1" alt=""></div>
+          <div class="reel" id="c1_2"><img id="img-c1_2" alt=""></div>
+          <div class="reel" id="c1_3"><img id="img-c1_3" alt=""></div>
+          <div class="reel" id="c1_4"><img id="img-c1_4" alt=""></div>
+        </div>
+
+        <div class="row">
+          <div class="reel" id="c2_0"><img id="img-c2_0" alt=""></div>
+          <div class="reel" id="c2_1"><img id="img-c2_1" alt=""></div>
+          <div class="reel" id="c2_2"><img id="img-c2_2" alt=""></div>
+          <div class="reel" id="c2_3"><img id="img-c2_3" alt=""></div>
+          <div class="reel" id="c2_4"><img id="img-c2_4" alt=""></div>
+        </div>
+      </div>
+
+      <!-- BOTTOM / 3 -->
+      <div class="row-section bottom-row">
+        <div class="reel" id="br1"><img id="img-br1" alt=""></div>
+        <div class="reel" id="br2"><img id="img-br2" alt=""></div>
+        <div class="reel" id="br3"><img id="img-br3" alt=""></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input id="apuesta" type="number" min="1" placeholder="Apuesta">
+      <button id="spinBtn" type="button" onclick="jugar()">🎰 GIRAR</button>
+      <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+    </div>
+
+    <div class="info">
+      <div id="resultado" class="info-line"></div>
+      <div id="detallePago" class="pay-lines"></div>
+      <div id="bonusHint" class="bonus-hint"></div>
+    </div>
   </div>
 
-  <!-- BOTTOM -->
-  <div class="row-section bottom-row">
-    <div class="reel" id="br1">❓</div>
-    <div class="reel" id="br2">❓</div>
-    <div class="reel" id="br3">❓</div>
-  </div>
-
-</div>
-
-<input id="apuesta" type="number" placeholder="Apuesta">
-<br>
-<button onclick="jugar()">🎰 GIRAR</button>
-
-<p id="resultado"></p>
-
-<br>
-<button onclick="window.location.href='/menu.html'">⬅ Volver</button>
-
-<!-- 🔊 SONIDOS -->
-<audio id="spinSound" src="https://www.myinstants.com/media/sounds/slot-machine.mp3"></audio>
-<audio id="winSound" src="https://www.myinstants.com/media/sounds/win.mp3"></audio>
-
-<script src="/slots.js"></script>
-
+  <script src="/slots.js"></script>
 </body>
 </html>
