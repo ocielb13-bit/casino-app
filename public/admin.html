@@ -1,24 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Admin</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="page">
+    <div class="card">
+      <h1>👑 Panel Admin</h1>
+      <p id="adminLine"></p>
 
-<h1>👑 Panel Admin</h1>
+      <div class="kpi">
+        <div class="pill">RTP slots: <strong id="currentRtp">96</strong>%</div>
+        <div class="pill">Saldo inicial: <strong id="currentDefaultBalance">1000</strong></div>
+        <div class="pill">Jackpot: <strong id="currentJackpot">1000</strong></div>
+      </div>
 
-<h3>Crear usuario</h3>
-<input id="user" placeholder="Usuario">
-<input id="pass" placeholder="Contraseña">
-<input id="saldo" type="number" placeholder="Saldo">
-<button onclick="crear()">Crear</button>
+      <h3>Ajustes globales</h3>
+      <div class="row">
+        <input id="rtpInput" type="number" step="0.1" min="70" max="99.9" placeholder="RTP slots">
+        <input id="defaultBalanceInput" type="number" min="0" placeholder="Saldo inicial">
+        <input id="jackpotInput" type="number" min="1000" placeholder="Jackpot">
+      </div>
+      <button type="button" onclick="saveSettings()">Guardar ajustes</button>
 
-<h3>Usuarios</h3>
-<button onclick="cargar()">Ver usuarios</button>
+      <hr style="border-color: rgba(255,255,255,.08); margin: 20px 0;">
 
-<ul id="lista"></ul>
+      <h3>Crear usuario</h3>
+      <div class="row">
+        <input id="newUser" placeholder="Usuario nuevo">
+        <input id="newPass" type="password" placeholder="Contraseña">
+        <input id="newBalance" type="number" placeholder="Saldo inicial">
+      </div>
+      <button type="button" onclick="createUser()">Crear usuario</button>
 
-<script src="/admin.js"></script>
+      <h3>Usuarios guardados</h3>
+      <div id="usersList"></div>
 
+      <div class="row" style="margin-top: 16px;">
+        <button type="button" class="secondary" onclick="goMenu()">Volver al menú</button>
+        <button type="button" class="secondary" onclick="logout()">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/admin.js"></script>
 </body>
 </html>
