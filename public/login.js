@@ -1,24 +1,52 @@
-async function login() {
-  const username = document.getElementById("name").value;
-  const password = document.getElementById("pass").value;
+// login.js - valida sesión, hace login y redirige
 
-  const res = await fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+async function api(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options
   });
 
-  const data = await res.json();
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
 
-  if (data.success) {
-    localStorage.setItem("user", username);
+  if (!res.ok) {
+    throw new Error(data.error || "Error");
+  }
 
-    if (data.role === "admin") {
-      window.location.href = "/admin.html";
-    } else {
-      window.location.href = "/menu.html";
-    }
-  } else {
-    document.getElementById("msg").innerText = "❌ Datos incorrectos";
+  return data;
+}
+
+async function checkSession() {
+  try {
+    const me = await api("/api/me");
+    window.location.href = me.role === "admin" ? "/admin.html" : "/menu.html";
+  } catch {
+    // no hay sesión, se queda en login
   }
 }
+
+async function login() {
+  const username = document.getElementById("name").value.trim();
+  const password = document.getElementById("pass").value.trim();
+  const msg = document.getElementById("msg");
+
+  if (!username || !password) {
+    msg.textContent = "Poné usuario y contraseña.";
+    return;
+  }
+
+  try {
+    const data = await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password })
+    });
+
+    window.location.href = data.role === "admin" ? "/admin.html" : "/menu.html";
+  } catch (err) {
+    msg.textContent = "❌ " + err.message;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", checkSession);
