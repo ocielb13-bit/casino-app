@@ -1,271 +1,312 @@
-const user = localStorage.getItem("user");
+// slots.js - imágenes, luces de pago, scatters, wild, free spins y RTP
 
-if (!user) {
-  window.location.href = "/menu.html";
+async function api(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options
+  });
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    throw new Error(data.error || "Error");
+  }
+
+  return data;
 }
 
-const simbolos = ["🍒", "🍋", "🍉", "⭐", "💎", "7️⃣", "🎁"];
+// Tema guardado para no perder estilo
+const savedTheme = localStorage.getItem("slotTheme") || "asian";
 
-// Pesos para que 🎁 salga MUY poco
-const simbolosPonderados = [
-  ...Array(30).fill("🍒"),
-  ...Array(30).fill("🍋"),
-  ...Array(25).fill("🍉"),
-  ...Array(20).fill("⭐"),
-  ...Array(15).fill("💎"),
-  ...Array(10).fill("7️⃣"),
-  ...Array(2).fill("🎁")
-];
+// Estado local
+let session = null;
+let playing = false;
 
-const LINEAS = {
+// Reels por línea
+const CELL_IDS = {
   top: ["tr1", "tr2", "tr3"],
   row1: ["c1_0", "c1_1", "c1_2", "c1_3", "c1_4"],
   row2: ["c2_0", "c2_1", "c2_2", "c2_3", "c2_4"],
   bottom: ["br1", "br2", "br3"]
 };
 
-let jackpotAcumulado = 1000;
-let freeSpinsRestantes = 0;
-let gananciaFreeSpins = 0;
-let enFreeSpin = false;
-let jugando = false;
-let saldoActual = 0;
+// Imágenes tipo tarjeta/SVG para cada tema
+const THEME_ART = {
+  asian: {
+    dragon: { label: "龍", a: "#ffbe2e", b: "#7d2a00", c: "#fff2b5" },
+    coin: { label: "金", a: "#ffd85b", b: "#5a3a00", c: "#fff7cf" },
+    jade: { label: "玉", a: "#32d6a2", b: "#0a4934", c: "#d8fff2" },
+    scroll: { label: "卷", a: "#ffca7b", b: "#7f4219", c: "#fff0d8" },
+    monk: { label: "僧", a: "#9b6cff", b: "#241046", c: "#f0e6ff" },
+    wild: { label: "WILD", a: "#ff57aa", b: "#3a0a28", c: "#ffe0ef" },
+    scatter: { label: "BONUS", a: "#55e4ff", b: "#0a2640", c: "#e8fbff" },
+    seven: { label: "7", a: "#ff4040", b: "#3b0909", c: "#ffd6d6" }
+  },
+  classic: {
+    cherry: { label: "🍒", a: "#ff5e7a", b: "#4e0a12", c: "#ffd9df" },
+    lemon: { label: "🍋", a: "#ffe16a", b: "#6e5300", c: "#fff7ce" },
+    plum: { label: "🍇", a: "#9d62ff", b: "#351060", c: "#efe2ff" },
+    bell: { label: "🔔", a: "#ffcf56", b: "#694000", c: "#fff1c0" },
+    bar: { label: "BAR", a: "#d9d9d9", b: "#2b2b2b", c: "#ffffff" },
+    wild: { label: "WILD", a: "#48d6ff", b: "#08314a", c: "#e5fbff" },
+    scatter: { label: "BONUS", a: "#55e4ff", b: "#0a2640", c: "#e8fbff" },
+    seven: { label: "7", a: "#ff4040", b: "#3b0909", c: "#ffd6d6" }
+  },
+  fruits: {
+    cherry: { label: "🍒", a: "#ff5e7a", b: "#4e0a12", c: "#ffd9df" },
+    lemon: { label: "🍋", a: "#ffe16a", b: "#6e5300", c: "#fff7ce" },
+    melon: { label: "🍉", a: "#5cff9a", b: "#0a4b2c", c: "#e2fff0" },
+    grape: { label: "🍇", a: "#9d62ff", b: "#351060", c: "#efe2ff" },
+    orange: { label: "🍊", a: "#ff9f45", b: "#6f3400", c: "#fff0d6" },
+    wild: { label: "WILD", a: "#48d6ff", b: "#08314a", c: "#e5fbff" },
+    scatter: { label: "BONUS", a: "#55e4ff", b: "#0a2640", c: "#e8fbff" },
+    seven: { label: "7", a: "#ff4040", b: "#3b0909", c: "#ffd6d6" }
+  }
+};
 
-function simboloAleatorio() {
-  return simbolosPonderados[Math.floor(Math.random() * simbolosPonderados.length)];
+function makeSvgCard(label, a, b, c) {
+  const fontSize = label.length > 4 ? 22 : label.length > 2 ? 28 : 44;
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${a}" />
+          <stop offset="100%" stop-color="${b}" />
+        </linearGradient>
+        <radialGradient id="shine" cx="50%" cy="35%" r="70%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.42" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <rect x="10" y="10" width="160" height="160" rx="28" fill="url(#bg)" stroke="${c}" stroke-width="5"/>
+      <rect x="24" y="24" width="132" height="132" rx="20" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
+      <ellipse cx="90" cy="66" rx="50" ry="28" fill="url(#shine)" />
+      <text x="90" y="${label.length > 4 ? 97 : 103}" text-anchor="middle" font-size="${fontSize}" font-family="Arial, Helvetica, sans-serif" font-weight="900" fill="#ffffff" stroke="rgba(0,0,0,0.20)" stroke-width="2">${label}</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-function setCell(id, valor) {
-  const el = document.getElementById(id);
-  if (el) el.innerText = valor;
+function buildCatalog(theme) {
+  const defs = THEME_ART[theme] || THEME_ART.asian;
+  const cache = {};
+
+  for (const [id, meta] of Object.entries(defs)) {
+    cache[id] = {
+      id,
+      label: meta.label,
+      src: makeSvgCard(meta.label, meta.a, meta.b, meta.c)
+    };
+  }
+
+  return cache;
 }
 
-function playSound(id) {
-  const audio = document.getElementById(id);
-  if (!audio) return;
-  try {
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
-  } catch (_) {}
+function randomSymbolId(theme) {
+  const catalog = buildCatalog(theme);
+  const ids = Object.keys(catalog);
+  return ids[Math.floor(Math.random() * ids.length)];
 }
 
-function resaltarLinea(ids) {
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.boxShadow = "0 0 18px gold";
-    el.style.transform = "scale(1.03)";
-    setTimeout(() => {
-      el.style.boxShadow = "";
-      el.style.transform = "";
-    }, 700);
+function cellImgId(cellId) {
+  return `img-${cellId}`;
+}
+
+function setCellImage(cellId, theme, symbolId) {
+  const catalog = buildCatalog(theme);
+  const img = document.getElementById(cellImgId(cellId));
+  if (!img || !catalog[symbolId]) return;
+  img.src = catalog[symbolId].src;
+  img.alt = symbolId;
+}
+
+function resetHighlights() {
+  document.querySelectorAll(".reel").forEach((el) => {
+    el.className = "reel";
   });
 }
 
-async function animarLinea(ids, finales, duracion = 800, tick = 70) {
-  return new Promise(resolve => {
+function highlightCells(ids, className) {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add(className);
+  });
+}
+
+function spinGroup(cellIds, finalIds, theme, duration = 800, tick = 70) {
+  return new Promise((resolve) => {
     const interval = setInterval(() => {
-      ids.forEach(id => setCell(id, simboloAleatorio()));
+      cellIds.forEach((cellId) => {
+        setCellImage(cellId, theme, randomSymbolId(theme));
+      });
     }, tick);
 
     setTimeout(() => {
       clearInterval(interval);
-      finales.forEach((valor, i) => setCell(ids[i], valor));
-      resolve(finales);
-    }, duracion);
+      cellIds.forEach((cellId, index) => {
+        setCellImage(cellId, theme, finalIds[index]);
+      });
+      resolve(finalIds);
+    }, duration);
   });
 }
 
-function renderSaldo() {
-  const saldoEl = document.getElementById("saldo");
-  if (!saldoEl) return;
-
-  saldoEl.innerText = `💰 ${saldoActual} | 🎁 ${freeSpinsRestantes} | 🏆 ${jackpotAcumulado}`;
+function renderBoard(board, theme) {
+  CELL_IDS.top.forEach((id, i) => setCellImage(id, theme, board.top[i]));
+  CELL_IDS.row1.forEach((id, i) => setCellImage(id, theme, board.row1[i]));
+  CELL_IDS.row2.forEach((id, i) => setCellImage(id, theme, board.row2[i]));
+  CELL_IDS.bottom.forEach((id, i) => setCellImage(id, theme, board.bottom[i]));
 }
 
-async function cargarSaldo() {
-  const res = await fetch("/get-balance", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: user })
-  });
-
-  const data = await res.json();
-  saldoActual = Number(data.balance || 0);
-  renderSaldo();
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
-async function actualizarSaldo(monto) {
-  const res = await fetch("/update-balance", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: user, amount: monto })
-  });
+async function loadSession() {
+  const me = await api("/api/me");
+  session = me;
 
-  const data = await res.json();
-  if (typeof data.balance === "number") {
-    saldoActual = data.balance;
+  if (me.role === "admin") {
+    window.location.href = "/admin.html";
+    return;
+  }
+
+  setText("playerLine", `Usuario: ${me.username}`);
+  setText("saldo", me.balance);
+  setText("freeLine", me.free_spins || 0);
+  setText("bankLine", me.free_spin_bank || 0);
+
+  const themeSelect = document.getElementById("theme");
+  themeSelect.value = localStorage.getItem("slotTheme") || "asian";
+}
+
+function clearInfo() {
+  setText("resultado", "");
+  setText("detallePago", "");
+  setText("bonusHint", "");
+}
+
+function applyOutcome(res) {
+  setText("saldo", res.balance);
+  setText("freeLine", res.freeSpinsRemaining);
+  setText("bankLine", res.freeSpinBank);
+  setText("jackpotLine", res.jackpotBank);
+
+  const main = [];
+
+  if (res.spinWinRaw > 0) {
+    main.push(`Ganancia de giro: ${res.spinWinRaw}`);
   } else {
-    saldoActual += monto;
-  }
-  renderSaldo();
-  return saldoActual;
-}
-
-function generarFinales() {
-  return {
-    top: Array.from({ length: 3 }, () => simboloAleatorio()),
-    row1: Array.from({ length: 5 }, () => simboloAleatorio()),
-    row2: Array.from({ length: 5 }, () => simboloAleatorio()),
-    bottom: Array.from({ length: 3 }, () => simboloAleatorio())
-  };
-}
-
-function calcularPremio(finales) {
-  let multiplicador = 0;
-  const mensajes = [];
-  const lineasGanadoras = [];
-
-  // TOP 3 iguales
-  if (finales.top.every(v => v === finales.top[0])) {
-    multiplicador += 10;
-    mensajes.push("Top x10");
-    lineasGanadoras.push(LINEAS.top);
+    main.push("Sin premio");
   }
 
-  // Fila 1 de 5 iguales
-  if (finales.row1.every(v => v === finales.row1[0])) {
-    multiplicador += 6;
-    mensajes.push("Fila 1 x6");
-    lineasGanadoras.push(LINEAS.row1);
+  if (res.creditedNow > 0) {
+    main.push(`Saldo sumado: ${res.creditedNow}`);
   }
 
-  // Fila 2 de 5 iguales
-  if (finales.row2.every(v => v === finales.row2[0])) {
-    multiplicador += 6;
-    mensajes.push("Fila 2 x6");
-    lineasGanadoras.push(LINEAS.row2);
+  if (res.freeSpinsAwarded > 0) {
+    main.push(`+${res.freeSpinsAwarded} free spins`);
   }
 
-  // Coincidencias por columna entre fila 1 y fila 2
-  finales.row1.forEach((emoji, i) => {
-    if (emoji === finales.row2[i]) {
-      multiplicador += 2;
-    }
-  });
+  if (res.freeSpinBankPaid > 0) {
+    main.push(`Cobro free: ${res.freeSpinBankPaid}`);
+  }
 
-  // Jackpot: 3 sietes abajo
-  if (finales.bottom.every(v => v === "7️⃣")) {
-    multiplicador += jackpotAcumulado / Math.max(1, apuestaActual);
-    mensajes.push("JACKPOT");
-    lineasGanadoras.push(LINEAS.bottom);
-    jackpotAcumulado = 1000;
+  if (res.scatterCount === 2) {
+    main.push("Faltó 1 scatter para free spins");
+  }
+
+  setText("resultado", main.join(" | "));
+
+  if (res.paylines.length) {
+    setText(
+      "detallePago",
+      res.paylines.map((p) => `${p.label} +${p.amount}`).join(" • ")
+    );
   } else {
-    jackpotAcumulado += Math.floor(apuestaActual * 0.1);
+    setText("detallePago", "Sin línea ganadora");
   }
 
-  // Free spins: muy raros
-  const todos = [...finales.top, ...finales.row1, ...finales.row2, ...finales.bottom];
-  const scatters = todos.filter(e => e === "🎁").length;
-
-  if (scatters >= 3) {
-    freeSpinsRestantes += 5;
-    mensajes.push("5 FREE SPINS");
+  if (res.scatterCount === 2) {
+    setText("bonusHint", "✨ Hay 2 scatters. Falta 1 para activar free spins.");
+    highlightCells(res.scatterCells, "scatter-hint");
   }
 
-  return { multiplicador, mensajes, lineasGanadoras, scatters };
+  if (res.freeSpinsAwarded > 0) {
+    setText("bonusHint", "🌀 Free spins activados.");
+    highlightCells(res.scatterCells, "free-hint");
+  }
+
+  res.paylines.forEach((line) => {
+    highlightCells(line.ids, line.tier);
+  });
 }
-
-let apuestaActual = 0;
 
 async function jugar() {
-  if (jugando) return;
-  jugando = true;
+  if (playing) return;
+  playing = true;
 
   try {
-    apuestaActual = parseInt(document.getElementById("apuesta").value, 10);
-    if (!apuestaActual || apuestaActual <= 0) return;
+    const amount = parseInt(document.getElementById("apuesta").value, 10);
+    const theme = document.getElementById("theme").value;
 
-    if (!enFreeSpin && apuestaActual > saldoActual) {
-      document.getElementById("resultado").innerText = "No tenés saldo suficiente";
+    localStorage.setItem("slotTheme", theme);
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setText("resultado", "Poné una apuesta válida.");
       return;
     }
 
-    playSound("spinSound");
+    const spinBtn = document.getElementById("spinBtn");
+    spinBtn.disabled = true;
 
-    if (freeSpinsRestantes > 0) {
-      enFreeSpin = true;
-      freeSpinsRestantes--;
-    } else {
-      enFreeSpin = false;
-      await actualizarSaldo(-apuestaActual);
-    }
+    resetHighlights();
+    clearInfo();
 
-    document.getElementById("resultado").innerText = "Girando...";
+    const res = await api("/api/slots/spin", {
+      method: "POST",
+      body: JSON.stringify({ amount, theme })
+    });
 
-    // Genero el resultado final una sola vez
-    const finales = generarFinales();
+    await Promise.all([
+      spinGroup(CELL_IDS.top, res.board.top, theme, 680, 60),
+      spinGroup(CELL_IDS.row1, res.board.row1, theme, 860, 60),
+      spinGroup(CELL_IDS.row2, res.board.row2, theme, 980, 60),
+      spinGroup(CELL_IDS.bottom, res.board.bottom, theme, 760, 60)
+    ]);
 
-    // Giro real por línea, todos los símbolos de esa línea se mueven juntos
-    const animTop = animarLinea(LINEAS.top, finales.top, 650, 60);
-    const animRow1 = animarLinea(LINEAS.row1, finales.row1, 850, 60);
-    const animRow2 = animarLinea(LINEAS.row2, finales.row2, 950, 60);
-    const animBottom = animarLinea(LINEAS.bottom, finales.bottom, 750, 60);
-
-    await Promise.all([animTop, animRow1, animRow2, animBottom]);
-
-    const { multiplicador, mensajes, lineasGanadoras } = calcularPremio(finales);
-    const gananciaTotal = apuestaActual * multiplicador;
-
-    // Resaltar líneas que ganaron
-    lineasGanadoras.forEach(resaltarLinea);
-
-    // Si está en free spin, se acumula para el final
-    if (gananciaTotal > 0) {
-      if (enFreeSpin) {
-        gananciaFreeSpins += gananciaTotal;
-      } else {
-        await actualizarSaldo(gananciaTotal);
-        playSound("winSound");
-      }
-    }
-
-    // Si terminó el bloque de free spins, se paga todo al final
-    if (enFreeSpin && freeSpinsRestantes === 0) {
-      if (gananciaFreeSpins > 0) {
-        await actualizarSaldo(gananciaFreeSpins);
-        playSound("winSound");
-      }
-
-      document.getElementById("resultado").innerText =
-        `🌀 Free Spins terminados | Total pagado: ${gananciaFreeSpins}`;
-
-      gananciaFreeSpins = 0;
-      enFreeSpin = false;
-      await cargarSaldo();
-      jugando = false;
-      return;
-    }
-
-    // Mensaje por tiro, actualizado en cada giro
-    let texto = gananciaTotal > 0
-      ? `🎉 Ganaste ${gananciaTotal}`
-      : "😢 Perdiste";
-
-    if (enFreeSpin) {
-      texto += ` | Free restantes: ${freeSpinsRestantes} | Acumulado: ${gananciaFreeSpins}`;
-    }
-
-    if (mensajes.length > 0) {
-      texto += ` | ${mensajes.join(" · ")}`;
-    }
-
-    document.getElementById("resultado").innerText = texto;
-
-    await cargarSaldo();
+    renderBoard(res.board, theme);
+    applyOutcome(res);
+    setText("saldo", res.balance);
+  } catch (err) {
+    setText("resultado", "❌ " + err.message);
   } finally {
-    jugando = false;
+    document.getElementById("spinBtn").disabled = false;
+    playing = false;
   }
 }
 
-cargarSaldo();
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await loadSession();
+    const theme = document.getElementById("theme").value || "asian";
+    renderBoard(
+      {
+        top: ["dragon", "coin", "jade"],
+        row1: ["scroll", "monk", "wild", "scatter", "seven"],
+        row2: ["coin", "jade", "scroll", "monk", "wild"],
+        bottom: ["dragon", "coin", "seven"]
+      },
+      theme
+    );
+    setText("jackpotLine", "1000");
+  } catch {
+    window.location.href = "/";
+  }
+});
