@@ -1,4 +1,4 @@
-// slots.js - imágenes, luces de pago, scatters, wild, free spins y RTP
+// slots.js - imágenes asian dragon, luces de pago, wild, scatter, free spins y jackpot
 
 async function api(url, options = {}) {
   const res = await fetch(url, {
@@ -18,14 +18,6 @@ async function api(url, options = {}) {
   return data;
 }
 
-// Tema guardado para no perder estilo
-const savedTheme = localStorage.getItem("slotTheme") || "asian";
-
-// Estado local
-let session = null;
-let playing = false;
-
-// Reels por línea
 const CELL_IDS = {
   top: ["tr1", "tr2", "tr3"],
   row1: ["c1_0", "c1_1", "c1_2", "c1_3", "c1_4"],
@@ -33,95 +25,48 @@ const CELL_IDS = {
   bottom: ["br1", "br2", "br3"]
 };
 
-// Imágenes tipo tarjeta/SVG para cada tema
-const THEME_ART = {
-  asian: {
-    dragon: { label: "龍", a: "#ffbe2e", b: "#7d2a00", c: "#fff2b5" },
-    coin: { label: "金", a: "#ffd85b", b: "#5a3a00", c: "#fff7cf" },
-    jade: { label: "玉", a: "#32d6a2", b: "#0a4934", c: "#d8fff2" },
-    scroll: { label: "卷", a: "#ffca7b", b: "#7f4219", c: "#fff0d8" },
-    monk: { label: "僧", a: "#9b6cff", b: "#241046", c: "#f0e6ff" },
-    wild: { label: "WILD", a: "#ff57aa", b: "#3a0a28", c: "#ffe0ef" },
-    scatter: { label: "BONUS", a: "#55e4ff", b: "#0a2640", c: "#e8fbff" },
-    seven: { label: "7", a: "#ff4040", b: "#3b0909", c: "#ffd6d6" }
-  },
-  classic: {
-    cherry: { label: "🍒", a: "#ff5e7a", b: "#4e0a12", c: "#ffd9df" },
-    lemon: { label: "🍋", a: "#ffe16a", b: "#6e5300", c: "#fff7ce" },
-    plum: { label: "🍇", a: "#9d62ff", b: "#351060", c: "#efe2ff" },
-    bell: { label: "🔔", a: "#ffcf56", b: "#694000", c: "#fff1c0" },
-    bar: { label: "BAR", a: "#d9d9d9", b: "#2b2b2b", c: "#ffffff" },
-    wild: { label: "WILD", a: "#48d6ff", b: "#08314a", c: "#e5fbff" },
-    scatter: { label: "BONUS", a: "#55e4ff", b: "#0a2640", c: "#e8fbff" },
-    seven: { label: "7", a: "#ff4040", b: "#3b0909", c: "#ffd6d6" }
-  },
-  fruits: {
-    cherry: { label: "🍒", a: "#ff5e7a", b: "#4e0a12", c: "#ffd9df" },
-    lemon: { label: "🍋", a: "#ffe16a", b: "#6e5300", c: "#fff7ce" },
-    melon: { label: "🍉", a: "#5cff9a", b: "#0a4b2c", c: "#e2fff0" },
-    grape: { label: "🍇", a: "#9d62ff", b: "#351060", c: "#efe2ff" },
-    orange: { label: "🍊", a: "#ff9f45", b: "#6f3400", c: "#fff0d6" },
-    wild: { label: "WILD", a: "#48d6ff", b: "#08314a", c: "#e5fbff" },
-    scatter: { label: "BONUS", a: "#55e4ff", b: "#0a2640", c: "#e8fbff" },
-    seven: { label: "7", a: "#ff4040", b: "#3b0909", c: "#ffd6d6" }
-  }
+const SYMBOL_KIND = {
+  dragon: "regular",
+  goldpot: "regular",
+  coin: "regular",
+  jade: "regular",
+  lantern: "regular",
+  wild: "wild",
+  scatter: "scatter"
 };
 
-function makeSvgCard(label, a, b, c) {
-  const fontSize = label.length > 4 ? 22 : label.length > 2 ? 28 : 44;
+const WEIGHTED_POOL = [
+  ...Array(14).fill("dragon"),
+  ...Array(12).fill("goldpot"),
+  ...Array(18).fill("coin"),
+  ...Array(18).fill("jade"),
+  ...Array(16).fill("lantern"),
+  ...Array(7).fill("wild"),
+  ...Array(3).fill("scatter")
+];
 
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
-      <defs>
-        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${a}" />
-          <stop offset="100%" stop-color="${b}" />
-        </linearGradient>
-        <radialGradient id="shine" cx="50%" cy="35%" r="70%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.42" />
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-        </radialGradient>
-      </defs>
-      <rect x="10" y="10" width="160" height="160" rx="28" fill="url(#bg)" stroke="${c}" stroke-width="5"/>
-      <rect x="24" y="24" width="132" height="132" rx="20" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
-      <ellipse cx="90" cy="66" rx="50" ry="28" fill="url(#shine)" />
-      <text x="90" y="${label.length > 4 ? 97 : 103}" text-anchor="middle" font-size="${fontSize}" font-family="Arial, Helvetica, sans-serif" font-weight="900" fill="#ffffff" stroke="rgba(0,0,0,0.20)" stroke-width="2">${label}</text>
-    </svg>
-  `;
+let session = null;
+let playing = false;
+let apostaActual = 0;
 
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+let jackpotAcumulado = 1000;
+let freeSpinsRestantes = 0;
+let freeSpinBank = 0;
+let enFreeSpin = false;
+let saldoActual = 0;
+
+function symbolSrc(symbolId) {
+  return `/assets/symbols/asian/${symbolId}.png`;
 }
 
-function buildCatalog(theme) {
-  const defs = THEME_ART[theme] || THEME_ART.asian;
-  const cache = {};
-
-  for (const [id, meta] of Object.entries(defs)) {
-    cache[id] = {
-      id,
-      label: meta.label,
-      src: makeSvgCard(meta.label, meta.a, meta.b, meta.c)
-    };
-  }
-
-  return cache;
+function pickSymbol() {
+  return WEIGHTED_POOL[Math.floor(Math.random() * WEIGHTED_POOL.length)];
 }
 
-function randomSymbolId(theme) {
-  const catalog = buildCatalog(theme);
-  const ids = Object.keys(catalog);
-  return ids[Math.floor(Math.random() * ids.length)];
-}
-
-function cellImgId(cellId) {
-  return `img-${cellId}`;
-}
-
-function setCellImage(cellId, theme, symbolId) {
-  const catalog = buildCatalog(theme);
-  const img = document.getElementById(cellImgId(cellId));
-  if (!img || !catalog[symbolId]) return;
-  img.src = catalog[symbolId].src;
+function setCell(cellId, symbolId) {
+  const img = document.getElementById(`img-${cellId}`);
+  if (!img) return;
+  img.src = symbolSrc(symbolId);
   img.alt = symbolId;
 }
 
@@ -138,34 +83,101 @@ function highlightCells(ids, className) {
   });
 }
 
-function spinGroup(cellIds, finalIds, theme, duration = 800, tick = 70) {
+function renderBoard(board) {
+  CELL_IDS.top.forEach((id, i) => setCell(id, board[id]));
+  CELL_IDS.row1.forEach((id, i) => setCell(id, board[id]));
+  CELL_IDS.row2.forEach((id, i) => setCell(id, board[id]));
+  CELL_IDS.bottom.forEach((id, i) => setCell(id, board[id]));
+}
+
+async function spinGroup(cellIds, finalMap, duration = 800, tick = 70) {
   return new Promise((resolve) => {
     const interval = setInterval(() => {
       cellIds.forEach((cellId) => {
-        setCellImage(cellId, theme, randomSymbolId(theme));
+        setCell(cellId, pickSymbol());
       });
     }, tick);
 
     setTimeout(() => {
       clearInterval(interval);
-      cellIds.forEach((cellId, index) => {
-        setCellImage(cellId, theme, finalIds[index]);
-      });
-      resolve(finalIds);
+      cellIds.forEach((cellId) => setCell(cellId, finalMap[cellId]));
+      resolve(true);
     }, duration);
   });
 }
 
-function renderBoard(board, theme) {
-  CELL_IDS.top.forEach((id, i) => setCellImage(id, theme, board.top[i]));
-  CELL_IDS.row1.forEach((id, i) => setCellImage(id, theme, board.row1[i]));
-  CELL_IDS.row2.forEach((id, i) => setCellImage(id, theme, board.row2[i]));
-  CELL_IDS.bottom.forEach((id, i) => setCellImage(id, theme, board.bottom[i]));
+function lineValues(board, ids) {
+  return ids.map((id) => board[id]);
 }
 
-function setText(id, text) {
+function sameLineMatch(values) {
+  const nonWild = values.filter((s) => SYMBOL_KIND[s] !== "wild");
+  if (nonWild.length === 0) return null;
+
+  const base = nonWild[0];
+  if (SYMBOL_KIND[base] !== "regular") return null;
+
+  const ok = values.every((s) => SYMBOL_KIND[s] === "wild" || s === base);
+  return ok ? base : null;
+}
+
+function pairMatch(a, b) {
+  const kindA = SYMBOL_KIND[a];
+  const kindB = SYMBOL_KIND[b];
+
+  if (!kindA || !kindB) return false;
+  if (kindA === "scatter" || kindB === "scatter") return false;
+
+  if (a === b && kindA === "regular") return true;
+  if (kindA === "wild" && kindB === "regular") return true;
+  if (kindB === "wild" && kindA === "regular") return true;
+  if (kindA === "wild" && kindB === "wild") return true;
+
+  return false;
+}
+
+function payoutTier(amount, bet) {
+  if (amount >= bet * 30) return "win-jackpot";
+  if (amount >= bet * 12) return "win-high";
+  if (amount >= bet * 5) return "win-mid";
+  return "win-low";
+}
+
+function boardAsObject() {
+  return {
+    top: ["tr1", "tr2", "tr3"],
+    row1: ["c1_0", "c1_1", "c1_2", "c1_3", "c1_4"],
+    row2: ["c2_0", "c2_1", "c2_2", "c2_3", "c2_4"],
+    bottom: ["br1", "br2", "br3"]
+  };
+}
+
+function generateBoard() {
+  const board = {};
+  const allCells = [
+    ...CELL_IDS.top,
+    ...CELL_IDS.row1,
+    ...CELL_IDS.row2,
+    ...CELL_IDS.bottom
+  ];
+
+  allCells.forEach((cellId) => {
+    board[cellId] = pickSymbol();
+  });
+
+  return board;
+}
+
+function setText(id, value) {
   const el = document.getElementById(id);
-  if (el) el.textContent = text;
+  if (el) el.textContent = value;
+}
+
+function showBalance() {
+  setText("saldo", saldoActual);
+  setText("freeLine", freeSpinsRestantes);
+  setText("bankLine", freeSpinBank);
+  setText("jackpotLine", jackpotAcumulado);
 }
 
 async function loadSession() {
@@ -177,13 +189,12 @@ async function loadSession() {
     return;
   }
 
-  setText("playerLine", `Usuario: ${me.username}`);
-  setText("saldo", me.balance);
-  setText("freeLine", me.free_spins || 0);
-  setText("bankLine", me.free_spin_bank || 0);
+  saldoActual = Number(me.balance || 0);
+  freeSpinsRestantes = Number(me.free_spins || 0);
+  freeSpinBank = Number(me.free_spin_bank || 0);
 
-  const themeSelect = document.getElementById("theme");
-  themeSelect.value = localStorage.getItem("slotTheme") || "asian";
+  setText("playerLine", `Usuario: ${me.username}`);
+  showBalance();
 }
 
 function clearInfo() {
@@ -193,36 +204,23 @@ function clearInfo() {
 }
 
 function applyOutcome(res) {
-  setText("saldo", res.balance);
-  setText("freeLine", res.freeSpinsRemaining);
-  setText("bankLine", res.freeSpinBank);
-  setText("jackpotLine", res.jackpotBank);
+  saldoActual = res.balance;
+  freeSpinsRestantes = res.freeSpinsRemaining;
+  freeSpinBank = res.freeSpinBank;
+  jackpotAcumulado = res.jackpotBank;
 
-  const main = [];
+  showBalance();
 
-  if (res.spinWinRaw > 0) {
-    main.push(`Ganancia de giro: ${res.spinWinRaw}`);
-  } else {
-    main.push("Sin premio");
-  }
+  const summary = [];
 
-  if (res.creditedNow > 0) {
-    main.push(`Saldo sumado: ${res.creditedNow}`);
-  }
+  if (res.spinWinRaw > 0) summary.push(`Premio del giro: ${res.spinWinRaw}`);
+  if (res.creditedNow > 0) summary.push(`Saldo agregado: ${res.creditedNow}`);
+  if (res.freeSpinsAwarded > 0) summary.push(`+${res.freeSpinsAwarded} free spins`);
+  if (res.freeSpinBankPaid > 0) summary.push(`Pago free spins: ${res.freeSpinBankPaid}`);
 
-  if (res.freeSpinsAwarded > 0) {
-    main.push(`+${res.freeSpinsAwarded} free spins`);
-  }
+  if (summary.length === 0) summary.push("Sin premio");
 
-  if (res.freeSpinBankPaid > 0) {
-    main.push(`Cobro free: ${res.freeSpinBankPaid}`);
-  }
-
-  if (res.scatterCount === 2) {
-    main.push("Faltó 1 scatter para free spins");
-  }
-
-  setText("resultado", main.join(" | "));
+  setText("resultado", summary.join(" | "));
 
   if (res.paylines.length) {
     setText(
@@ -253,13 +251,16 @@ async function jugar() {
   playing = true;
 
   try {
-    const amount = parseInt(document.getElementById("apuesta").value, 10);
-    const theme = document.getElementById("theme").value;
-
-    localStorage.setItem("slotTheme", theme);
-
-    if (!Number.isInteger(amount) || amount <= 0) {
+    const apuesta = parseInt(document.getElementById("apuesta").value, 10);
+    if (!Number.isInteger(apuesta) || apuesta <= 0) {
       setText("resultado", "Poné una apuesta válida.");
+      return;
+    }
+
+    apuestaActual = apuesta;
+
+    if (!enFreeSpin && apuestaActual > saldoActual) {
+      setText("resultado", "No tenés saldo suficiente.");
       return;
     }
 
@@ -269,21 +270,164 @@ async function jugar() {
     resetHighlights();
     clearInfo();
 
-    const res = await api("/api/slots/spin", {
-      method: "POST",
-      body: JSON.stringify({ amount, theme })
+    if (freeSpinsRestantes > 0) {
+      enFreeSpin = true;
+      freeSpinsRestantes--;
+    } else {
+      enFreeSpin = false;
+      const betRes = await api("/update-balance", {
+        method: "POST",
+        body: JSON.stringify({ username: session.username, amount: -apuestaActual })
+      });
+      saldoActual = Number(betRes.balance || saldoActual - apuestaActual);
+      showBalance();
+    }
+
+    const board = generateBoard();
+    renderBoard(board);
+
+    const animTop = spinGroup(CELL_IDS.top, board, 650, 60);
+    const animRow1 = spinGroup(CELL_IDS.row1, board, 850, 60);
+    const animRow2 = spinGroup(CELL_IDS.row2, board, 980, 60);
+    const animBottom = spinGroup(CELL_IDS.bottom, board, 760, 60);
+
+    await Promise.all([animTop, animRow1, animRow2, animBottom]);
+
+    const topVals = lineValues(board, CELL_IDS.top);
+    const row1Vals = lineValues(board, CELL_IDS.row1);
+    const row2Vals = lineValues(board, CELL_IDS.row2);
+    const bottomVals = lineValues(board, CELL_IDS.bottom);
+
+    const paylines = [];
+    const payoutScale = 96 / 96;
+
+    const topMatch = sameLineMatch(topVals);
+    if (topMatch) {
+      const win = Math.round(apuestaActual * 10 * payoutScale);
+      paylines.push({
+        label: "Fila superior",
+        ids: CELL_IDS.top,
+        amount: win,
+        tier: payoutTier(win, apuestaActual)
+      });
+    }
+
+    const row1Match = sameLineMatch(row1Vals);
+    if (row1Match) {
+      const win = Math.round(apuestaActual * 6 * payoutScale);
+      paylines.push({
+        label: "Fila central A",
+        ids: CELL_IDS.row1,
+        amount: win,
+        tier: payoutTier(win, apuestaActual)
+      });
+    }
+
+    const row2Match = sameLineMatch(row2Vals);
+    if (row2Match) {
+      const win = Math.round(apuestaActual * 6 * payoutScale);
+      paylines.push({
+        label: "Fila central B",
+        ids: CELL_IDS.row2,
+        amount: win,
+        tier: payoutTier(win, apuestaActual)
+      });
+    }
+
+    for (let i = 0; i < 5; i++) {
+      if (pairMatch(row1Vals[i], row2Vals[i])) {
+        const win = Math.round(apuestaActual * 2 * payoutScale);
+        paylines.push({
+          label: `Par ${i + 1}`,
+          ids: [`c1_${i}`, `c2_${i}`],
+          amount: win,
+          tier: payoutTier(win, apuestaActual)
+        });
+      }
+    }
+
+    let jackpotHit = false;
+    if (bottomVals.every((s) => s === "dragon")) {
+      jackpotHit = true;
+      const win = jackpotAcumulado + Math.round(apuestaActual * 40);
+      paylines.push({
+        label: "JACKPOT",
+        ids: CELL_IDS.bottom,
+        amount: win,
+        tier: "win-jackpot"
+      });
+      jackpotAcumulado = 1000;
+    } else {
+      jackpotAcumulado += Math.max(1, Math.round(apuestaActual * 0.1));
+    }
+
+    const allSymbols = [...topVals, ...row1Vals, ...row2Vals, ...bottomVals];
+    const scatterCells = [];
+    allSymbols.forEach((sym, index) => {
+      if (SYMBOL_KIND[sym] === "scatter") {
+        const cellId = [
+          ...CELL_IDS.top,
+          ...CELL_IDS.row1,
+          ...CELL_IDS.row2,
+          ...CELL_IDS.bottom
+        ][index];
+        scatterCells.push(cellId);
+      }
     });
 
-    await Promise.all([
-      spinGroup(CELL_IDS.top, res.board.top, theme, 680, 60),
-      spinGroup(CELL_IDS.row1, res.board.row1, theme, 860, 60),
-      spinGroup(CELL_IDS.row2, res.board.row2, theme, 980, 60),
-      spinGroup(CELL_IDS.bottom, res.board.bottom, theme, 760, 60)
-    ]);
+    const scatterCount = scatterCells.length;
+    let freeSpinsAwarded = 0;
 
-    renderBoard(res.board, theme);
-    applyOutcome(res);
-    setText("saldo", res.balance);
+    if (scatterCount >= 3) {
+      freeSpinsRestantes += 5;
+      freeSpinsAwarded = 5;
+    }
+
+    const spinWinRaw = paylines.reduce((sum, line) => sum + line.amount, 0);
+
+    let creditedNow = 0;
+    if (spinWinRaw > 0) {
+      if (enFreeSpin) {
+        freeSpinBank += spinWinRaw;
+      } else {
+        const winRes = await api("/update-balance", {
+          method: "POST",
+          body: JSON.stringify({ username: session.username, amount: spinWinRaw })
+        });
+        saldoActual = Number(winRes.balance || saldoActual + spinWinRaw);
+        creditedNow = spinWinRaw;
+      }
+    }
+
+    let freeSpinBankPaid = 0;
+    if (enFreeSpin && freeSpinsRestantes === 0 && freeSpinBank > 0) {
+      const bankRes = await api("/update-balance", {
+        method: "POST",
+        body: JSON.stringify({ username: session.username, amount: freeSpinBank })
+      });
+
+      saldoActual = Number(bankRes.balance || saldoActual + freeSpinBank);
+      freeSpinBankPaid = freeSpinBank;
+      creditedNow += freeSpinBank;
+      freeSpinBank = 0;
+      enFreeSpin = false;
+    }
+
+    showBalance();
+
+    applyOutcome({
+      balance: saldoActual,
+      paylines,
+      spinWinRaw,
+      creditedNow,
+      freeSpinsRemaining: freeSpinsRestantes,
+      freeSpinsAwarded,
+      freeSpinBank,
+      freeSpinBankPaid,
+      scatterCount,
+      scatterCells,
+      jackpotBank: jackpotAcumulado
+    });
   } catch (err) {
     setText("resultado", "❌ " + err.message);
   } finally {
@@ -295,17 +439,11 @@ async function jugar() {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadSession();
-    const theme = document.getElementById("theme").value || "asian";
-    renderBoard(
-      {
-        top: ["dragon", "coin", "jade"],
-        row1: ["scroll", "monk", "wild", "scatter", "seven"],
-        row2: ["coin", "jade", "scroll", "monk", "wild"],
-        bottom: ["dragon", "coin", "seven"]
-      },
-      theme
-    );
-    setText("jackpotLine", "1000");
+
+    // Board inicial para que no se vea vacío
+    const initial = generateBoard();
+    renderBoard(initial);
+    showBalance();
   } catch {
     window.location.href = "/";
   }
