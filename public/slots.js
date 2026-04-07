@@ -288,7 +288,16 @@ async function jugar() {
       freeSpinsRestantes--;
     } else {
       enFreeSpin = false;
-      const betRes = await api("/update-balance", {
+      await fetch("/update-balance", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({
+    username: localStorage.getItem("user"),
+    amount: -apuestaActual
+  })
+});
+
+saldoActual -= apuestaActual;
         method: "POST",
         body: JSON.stringify({ username: session.username, amount: -apuestaActual })
       });
@@ -403,9 +412,17 @@ async function jugar() {
       if (enFreeSpin) {
         freeSpinBank += spinWinRaw;
       } else {
-        const winRes = await api("/update-balance", {
-          method: "POST",
-          body: JSON.stringify({ username: session.username, amount: spinWinRaw })
+        await fetch("/update-balance", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({
+    username: localStorage.getItem("user"),
+    amount: spinWinRaw
+  })
+});
+
+saldoActual += spinWinRaw;
+creditedNow = spinWinRaw;
         });
         saldoActual = Number(winRes.balance || saldoActual + spinWinRaw);
         creditedNow = spinWinRaw;
@@ -414,10 +431,21 @@ async function jugar() {
 
     let freeSpinBankPaid = 0;
     if (enFreeSpin && freeSpinsRestantes === 0 && freeSpinBank > 0) {
-      const bankRes = await api("/update-balance", {
-        method: "POST",
-        body: JSON.stringify({ username: session.username, amount: freeSpinBank })
-      });
+      await fetch("/update-balance", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({
+    username: localStorage.getItem("user"),
+    amount: freeSpinBank
+  })
+ });
+});
+
+saldoActual += freeSpinBank;
+freeSpinBankPaid = freeSpinBank;
+creditedNow += freeSpinBank;
+freeSpinBank = 0;
+enFreeSpin = false;
 
       saldoActual = Number(bankRes.balance || saldoActual + freeSpinBank);
       freeSpinBankPaid = freeSpinBank;
