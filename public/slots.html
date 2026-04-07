@@ -33,15 +33,17 @@
       margin-left: 40px;
     }
 
-    .center-reels {
-      display: flex;
-      gap: 20px;
-    }
-
-    .column {
+    /* 🔥 CORRECCIÓN IMPORTANTE */
+    .center-grid {
       display: flex;
       flex-direction: column;
+      gap: 10px;
+    }
+
+    .row {
+      display: flex;
       gap: 8px;
+      justify-content: center;
     }
 
     .reel {
@@ -80,38 +82,27 @@
   </div>
 
   <!-- CENTRO -->
-  .center-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+  <div class="center-grid">
 
-.row {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-<div class="row-section center-grid">
+    <!-- FILA 1 -->
+    <div class="row">
+      <div class="reel" id="c1_0">❓</div>
+      <div class="reel" id="c1_1">❓</div>
+      <div class="reel" id="c1_2">❓</div>
+      <div class="reel" id="c1_3">❓</div>
+      <div class="reel" id="c1_4">❓</div>
+    </div>
 
-  <!-- FILA 1 -->
-  <div class="row">
-    <div class="reel" id="c1_0">❓</div>
-    <div class="reel" id="c1_1">❓</div>
-    <div class="reel" id="c1_2">❓</div>
-    <div class="reel" id="c1_3">❓</div>
-    <div class="reel" id="c1_4">❓</div>
+    <!-- FILA 2 -->
+    <div class="row">
+      <div class="reel" id="c2_0">❓</div>
+      <div class="reel" id="c2_1">❓</div>
+      <div class="reel" id="c2_2">❓</div>
+      <div class="reel" id="c2_3">❓</div>
+      <div class="reel" id="c2_4">❓</div>
+    </div>
+
   </div>
-
-  <!-- FILA 2 -->
-  <div class="row">
-    <div class="reel" id="c2_0">❓</div>
-    <div class="reel" id="c2_1">❓</div>
-    <div class="reel" id="c2_2">❓</div>
-    <div class="reel" id="c2_3">❓</div>
-    <div class="reel" id="c2_4">❓</div>
-  </div>
-
-</div>
 
   <!-- BOTTOM -->
   <div class="row-section bottom-row">
