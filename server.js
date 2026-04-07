@@ -22,8 +22,8 @@ const JWT_SECRET = "SUPER_SECRET_KEY"; // 🔒 cambiar en producción
 // 🟣 SUPABASE
 // =============================
 const supabase = createClient(
-  "https://TU_URL.supabase.co",
-  "TU_PUBLIC_ANON_KEY"
+  "https://zggvrzgumtbilqvoggco.supabase.co",
+  "sb_publishable_5Juv5ZwoL7tfkGLpOkKGaw_a9jMUDAC"
 );
 
 // =============================
