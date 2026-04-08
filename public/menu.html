@@ -10,7 +10,7 @@
   <div class="page">
     <div class="card">
       <h1>🎰 Mi Casino</h1>
-      <p id="playerLine"></p>
+      <p id="playerLine" class="muted"></p>
 
       <div class="kpi">
         <div class="pill">Saldo: <strong id="balanceLine">0</strong></div>
@@ -18,12 +18,21 @@
         <div class="pill">Banco free: <strong id="bankLine">0</strong></div>
       </div>
 
-      <div class="row">
-        <button type="button" onclick="go('slots')">🎰 Slots</button>
-        <button type="button" onclick="go('ruleta')">🎡 Ruleta</button>
+      <div class="game-grid">
+        <a class="game-card" href="/slots.html">
+          <div class="game-icon">🎰</div>
+          <div class="game-name">Slots</div>
+          <div class="game-desc">Asian Dragon disponible</div>
+        </a>
+
+        <a class="game-card" href="/ruleta.html">
+          <div class="game-icon">🎡</div>
+          <div class="game-name">Ruleta</div>
+          <div class="game-desc">Mesa visual simple</div>
+        </a>
       </div>
 
-      <div class="row">
+      <div class="row" style="margin-top: 16px;">
         <button type="button" class="secondary" onclick="logout()">Salir</button>
       </div>
     </div>
