@@ -1,39 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Panel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Pro</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="page">
+    <div class="card">
+      <div class="user-top">
+        <div>
+          <h1>👑 Panel Admin</h1>
+          <p class="muted" id="adminLine">Cargando...</p>
+        </div>
+        <button type="button" class="secondary" onclick="goCasino()">Ir al casino</button>
+      </div>
 
-<div class="card">
+      <div class="kpi">
+        <div class="pill">Win rate: <strong id="currentWinRate">30</strong>%</div>
+        <div class="pill">Multiplicador: <strong id="currentMultiplier">2</strong></div>
+        <div class="pill">Jackpot: <strong id="currentJackpot">1000</strong></div>
+        <div class="pill">Saldo base: <strong id="currentDefaultBalance">1000</strong></div>
+      </div>
 
-  <h2>👑 Admin Panel</h2>
+      <h3>Configuración global</h3>
+      <div class="row">
+        <input id="win_rate" type="number" step="0.1" min="1" max="99.9" placeholder="Win rate">
+        <input id="multiplier" type="number" step="0.1" min="1" placeholder="Multiplicador">
+        <input id="jackpot_bank" type="number" min="1000" placeholder="Jackpot">
+        <input id="default_balance" type="number" min="0" placeholder="Saldo base">
+      </div>
+      <div class="row">
+        <input id="slot_pay_3" type="number" min="0" placeholder="Pago 3 iguales">
+        <input id="slot_pay_4" type="number" min="0" placeholder="Pago 4 iguales">
+        <input id="slot_pay_5" type="number" min="0" placeholder="Pago 5 iguales">
+        <input id="roulette_payout" type="number" min="1" placeholder="Pago ruleta">
+      </div>
+      <button type="button" onclick="saveSettings()">Guardar ajustes</button>
 
-  <h3>Crear usuario</h3>
-  <input id="newUser" placeholder="Usuario">
-  <input id="newPass" placeholder="Password">
-  <button onclick="createUser()">Crear</button>
+      <h3 style="margin-top: 24px;">Crear usuario</h3>
+      <div class="row">
+        <input id="newUser" placeholder="Usuario nuevo">
+        <input id="newPass" type="password" placeholder="Contraseña">
+        <input id="newBalance" type="number" placeholder="Saldo inicial">
+        <select id="newRole">
+          <option value="player">Player</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button type="button" onclick="createUser()">Crear usuario</button>
 
-  <h3>Borrar usuario</h3>
-  <input id="deleteUser" placeholder="Usuario">
-  <button onclick="deleteUser()">Borrar</button>
+      <h3 style="margin-top: 24px;">Usuarios</h3>
+      <div id="usersList" class="user-list"></div>
 
-  <h3>Modificar saldo</h3>
-  <input id="balanceUser" placeholder="Usuario">
-  <input id="amount" placeholder="Cantidad (+ o -)">
-  <button onclick="updateBalance()">Aplicar</button>
+      <div class="row" style="margin-top: 16px;">
+        <button type="button" class="secondary" onclick="reloadAll()">Actualizar</button>
+        <button type="button" class="secondary" onclick="logout()">Salir</button>
+      </div>
 
-  <h3>Probabilidades</h3>
-  <input id="winRate" placeholder="Win rate %">
-  <input id="multiplier" placeholder="Multiplicador">
-  <button onclick="updateSettings()">Guardar</button>
+      <p id="msg" class="small"></p>
+    </div>
+  </div>
 
-  <p id="msg"></p>
-
-</div>
-
-<script src="/admin.js"></script>
+  <script src="/admin.js"></script>
 </body>
 </html>
