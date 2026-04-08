@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Casino</title>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -9,10 +10,37 @@
   <div class="page">
     <div class="card">
       <h1>🎰 Casino</h1>
-      <p id="welcome"></p>
-      <p>Saldo: $<span id="balance">0</span></p>
+      <p class="muted" id="welcome">Cargando...</p>
 
-      <button onclick="logout()">Salir</button>
+      <div class="kpi">
+        <div class="pill">Saldo: <strong id="balance">0</strong></div>
+        <div class="pill">Win rate: <strong id="winRate">30</strong>%</div>
+        <div class="pill">Multiplicador: <strong id="multiplier">2</strong></div>
+      </div>
+
+      <div class="grid-cards">
+        <a class="link-card" href="/slots.html">
+          <div class="icon">🐉</div>
+          <div class="title">Slots</div>
+          <div class="desc">Asian Dragon</div>
+        </a>
+
+        <a class="link-card" href="/ruleta.html">
+          <div class="icon">🎡</div>
+          <div class="title">Ruleta</div>
+          <div class="desc">Mesa visual</div>
+        </a>
+
+        <a class="link-card" href="/admin.html" id="adminCard" style="display:none;">
+          <div class="icon">👑</div>
+          <div class="title">Admin</div>
+          <div class="desc">Panel de control</div>
+        </a>
+      </div>
+
+      <div class="row" style="margin-top: 16px;">
+        <button type="button" class="secondary" onclick="logout()">Salir</button>
+      </div>
     </div>
   </div>
 
