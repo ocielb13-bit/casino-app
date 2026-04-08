@@ -1,12 +1,12 @@
-const token = localStorage.getItem("token");
+const username = localStorage.getItem("username");
 
-if (!token) window.location.href = "/";
+if (!username) {
+  window.location.href = "/";
+}
 
-document.body.innerHTML = `
-<h1>Casino 🎰</h1>
-<p>Jugador: ${localStorage.getItem("username")}</p>
-<button onclick="logout()">Salir</button>
-`;
+document.getElementById("welcome").innerText = "Bienvenido " + username;
+
+// (Opcional después lo conectamos al saldo real)
 
 function logout() {
   localStorage.clear();
