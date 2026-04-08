@@ -35,6 +35,28 @@ app.get("/", (req, res) => {
 
 // ================= AUTH =================
 
+// 🔐 Middleware
+function authRequired(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+}
+
+function adminOnly(req, res, next) {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Solo admin" });
+  }
+  next();
+}
+
+// 🔑 LOGIN
 app.post("/api/login", async (req, res) => {
   try {
     const { data: user } = await supabase
@@ -47,7 +69,7 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ error: "Usuario no existe" });
     }
 
-    // 🔥 LOGIN MIXTO (ARREGLO)
+    // 🔥 MIXTO (temporal)
     const valid =
       user.password === req.body.password ||
       (await bcrypt.compare(req.body.password, user.password));
@@ -66,15 +88,37 @@ app.post("/api/login", async (req, res) => {
       success: true,
       token,
       username: user.username,
-      balance: user.balance
+      balance: user.balance,
+      role: user.role // 🔥 CLAVE
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// ================= TEST =================
+// 👤 CREAR USUARIO (ADMIN)
+app.post("/api/register", authRequired, adminOnly, async (req, res) => {
+  try {
+    const { username, password } = req.body;
 
+    const hashed = await bcrypt.hash(password, 10);
+
+    const { error } = await supabase.from("app_users").insert({
+      username,
+      password: hashed,
+      role: "player",
+      balance: 1000
+    });
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 🧪 TEST
 app.get("/api/test", async (req, res) => {
   const { data, error } = await supabase.from("app_users").select("*");
 
