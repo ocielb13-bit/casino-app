@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ruleta</title>
   <link rel="stylesheet" href="/style.css">
-
   <style>
-    /* ruleta.html - visual simple */
     .wheel-box {
       width: 220px;
       height: 220px;
@@ -32,11 +30,6 @@
       from { transform: scale(1); }
       to { transform: scale(1.03); }
     }
-
-    .mini {
-      font-size: 14px;
-      color: #9aa4b2;
-    }
   </style>
 </head>
 <body>
@@ -50,7 +43,7 @@
       </div>
 
       <div id="wheel" class="wheel-box">0</div>
-      <p class="mini">Elegí un número del 0 al 36 y probá suerte.</p>
+      <p class="muted">Elegí un número del 0 al 36 y probá suerte.</p>
 
       <input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
       <input id="apuesta" type="number" min="1" placeholder="Apuesta">
