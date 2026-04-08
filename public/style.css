@@ -10,7 +10,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: Arial, Helvetica, sans-serif;
-  background: radial-gradient(circle at top, #182235 0%, #0a0d12 55%, #050608 100%);
+  background: radial-gradient(circle at top, #1b2440 0%, #090c12 58%, #050608 100%);
   color: #fff;
 }
 
@@ -23,7 +23,7 @@ body {
 }
 
 .card {
-  width: min(100%, 760px);
+  width: min(100%, 1100px);
   background: rgba(12, 16, 24, 0.92);
   border: 1px solid rgba(255, 215, 0, 0.15);
   border-radius: 24px;
@@ -69,6 +69,10 @@ button.danger {
   color: #fff;
 }
 
+button:hover {
+  filter: brightness(1.05);
+}
+
 .row {
   display: flex;
   gap: 12px;
@@ -97,14 +101,14 @@ button.danger {
   color: #9aa4b2;
 }
 
-.game-grid {
+.grid-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   margin-top: 18px;
 }
 
-.game-card {
+.link-card {
   display: block;
   text-decoration: none;
   color: inherit;
@@ -116,50 +120,60 @@ button.danger {
   transition: transform 0.18s ease, border-color 0.18s ease;
 }
 
-.game-card:hover {
+.link-card:hover {
   transform: translateY(-3px);
   border-color: rgba(255, 215, 0, 0.35);
 }
 
-.game-icon {
-  font-size: 46px;
+.icon {
+  font-size: 48px;
   line-height: 1;
   margin-bottom: 10px;
 }
 
-.game-name {
+.title {
   font-size: 20px;
   font-weight: 800;
   margin-bottom: 6px;
 }
 
-.game-desc {
+.desc {
   color: #9aa4b2;
   font-size: 14px;
 }
 
+.user-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .user-card {
-  background: #101622;
+  background: #0f1624;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   padding: 14px;
-  margin-top: 12px;
 }
 
-.user-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 8px;
-  margin: 10px 0;
-}
-
-.actions {
+.user-top {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-.actions > * {
-  flex: 1;
-  min-width: 110px;
+.tag {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.18);
+  font-size: 12px;
+}
+
+.small {
+  font-size: 13px;
+  color: #9aa4b2;
 }
