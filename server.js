@@ -3,6 +3,7 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { createClient } from "@supabase/supabase-js";
+import path from "path";
 
 // ================= CONFIG =================
 const app = express();
@@ -12,16 +13,20 @@ app.use(express.json());
 const PORT = 3000;
 const JWT_SECRET = "SUPER_SECRET_KEY";
 
-// 🔴 PONÉ TUS DATOS ACA
+// ================= SUPABASE =================
 const supabase = createClient(
-  "https://TU_URL.supabase.co",
-  "TU_ANON_KEY"
+  "https://zggvrzgumtbilqvoggco.supabase.co",
+  "sb_publishable_5Juv5ZwoL7tfkGLpOkKGaw_a9jMUDAC"
 );
 
-// ================= UTILS =================
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
+// ================= SERVIR FRONTEND =================
+// Esto permite que tu casino cargue desde Render
+app.use(express.static("public"));
+
+// Ruta base (evita "Cannot GET /")
+app.get("/", (req, res) => {
+  res.send("🎰 Casino online funcionando");
+});
 
 // ================= AUTH =================
 function authRequired(req, res, next) {
@@ -112,6 +117,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
 
     const inFree = freeSpins > 0;
 
+    // ================= DESCUENTO APUESTA =================
     if (!inFree) {
       if (balance < amount)
         return res.status(400).json({ error: "Sin saldo" });
@@ -121,36 +127,47 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       freeSpins--;
     }
 
+    // ================= SÍMBOLOS =================
     const symbols = ["dragon","coin","jade","lantern","wild","scatter"];
 
     const rand = () => symbols[Math.floor(Math.random() * symbols.length)];
 
+    // TABLERO 3x5 (3 filas, 5 columnas)
     const board = Array.from({ length: 3 }, () =>
       Array.from({ length: 5 }, rand)
     );
 
     let win = 0;
 
+    // ================= LÓGICA CORREGIDA =================
     function checkRow(row) {
-      let first = row[0];
+      let base = row[0];
       let count = 1;
 
+      // Si el primero es wild, buscar símbolo base real
+      if (base === "wild") {
+        base = row.find(s => s !== "wild") || "wild";
+      }
+
       for (let i = 1; i < row.length; i++) {
-        if (row[i] === first || row[i] === "wild") count++;
+        if (row[i] === base || row[i] === "wild") count++;
         else break;
       }
 
-      if (count >= 3) {
-        if (count === 3) return amount * 3;
-        if (count === 4) return amount * 8;
-        if (count === 5) return amount * 15;
-      }
+      if (count < 3) return 0;
+
+      if (count === 3) return amount * 2;
+      if (count === 4) return amount * 5;
+      if (count === 5) return amount * 10;
+
       return 0;
     }
 
-    board.forEach(r => win += checkRow(r));
+    board.forEach(row => {
+      win += checkRow(row);
+    });
 
-    // scatter
+    // ================= SCATTER =================
     const scatters = board.flat().filter(s => s === "scatter").length;
 
     let freeWon = 0;
@@ -159,16 +176,22 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       freeWon = 5;
     }
 
+    // ================= GANANCIA =================
     if (win > 0) {
-      if (inFree) bank += win;
-      else balance += win;
+      if (inFree) {
+        bank += win;
+      } else {
+        balance += win;
+      }
     }
 
+    // ================= FINAL FREE SPINS =================
     if (freeSpins === 0 && bank > 0) {
       balance += bank;
       bank = 0;
     }
 
+    // ================= GUARDAR =================
     await supabase.from("app_users").update({
       balance,
       free_spins: freeSpins,
