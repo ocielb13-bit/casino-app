@@ -1,11 +1,40 @@
 body {
   background: #0b0f1a;
   color: white;
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   text-align: center;
+  margin: 0;
 }
 
-/* GRID */
+.machine {
+  max-width: 1100px;
+  margin: 18px auto;
+  padding: 18px;
+}
+
+.slot-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 10px 0 20px;
+}
+
+.slot-card {
+  background: rgba(16, 22, 34, 0.95);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.slot-card.active {
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.08);
+}
+
+.slot-card.disabled {
+  opacity: 0.5;
+}
+
 .grid {
   display: flex;
   flex-direction: column;
@@ -17,28 +46,29 @@ body {
 .row {
   display: flex;
   gap: 10px;
+  flex-wrap: nowrap;
 }
 
-/* CASILLAS */
 .reel {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   background: #111;
   border: 2px solid #333;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: 0.2s;
+  transition: 0.18s ease;
+  overflow: hidden;
 }
 
 .reel img {
-  width: 70px;
-  height: 70px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-/* EFECTOS DE GANANCIA */
-.win {
+.win-low {
   border-color: #00ff99;
   box-shadow: 0 0 10px #00ff99;
 }
@@ -54,28 +84,58 @@ body {
 }
 
 .win-jackpot {
-  border-color: red;
-  box-shadow: 0 0 18px red;
+  border-color: #ff3b3b;
+  box-shadow: 0 0 18px #ff3b3b;
 }
 
-/* BOTÓN */
+.scatter-hint {
+  border-color: #ffd84d;
+  box-shadow: 0 0 16px #ffd84d;
+}
+
+.free-hint {
+  border-color: #66ffd1;
+  box-shadow: 0 0 16px #66ffd1;
+}
+
 button {
   padding: 10px 20px;
   font-size: 18px;
   background: gold;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  margin: 6px;
 }
 
-button:hover {
-  background: orange;
+button.secondary {
+  background: #182132;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* INPUT */
 input {
-  padding: 8px;
+  padding: 10px;
   font-size: 16px;
-  width: 100px;
+  width: min(100%, 220px);
   text-align: center;
+  background: #101622;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+}
+
+.kpi {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+
+.pill {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
 }
