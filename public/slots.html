@@ -1,68 +1,82 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Asian Dragon Slot</title>
-
-<link rel="stylesheet" href="slot.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asian Dragon Slot</title>
+  <link rel="stylesheet" href="/slot.css">
 </head>
 <body>
+  <div class="machine">
+    <h1>🐉 Asian Dragon Slot</h1>
 
-<h1>🐉 Asian Dragon Slot</h1>
+    <div class="kpi">
+      <div class="pill">Usuario: <strong id="playerLine">-</strong></div>
+      <div class="pill">Saldo: <strong id="saldo">0</strong></div>
+      <div class="pill">Free Spins: <strong id="freeLine">0</strong></div>
+      <div class="pill">Banco FS: <strong id="bankLine">0</strong></div>
+      <div class="pill">RTP: <strong id="rtpLine">96</strong>%</div>
+      <div class="pill">Jackpot: <strong id="jackpotLine">1000</strong></div>
+    </div>
 
-<div id="playerLine"></div>
-<div>💰 Saldo: <span id="saldo">0</span></div>
-<div>🎰 Free Spins: <span id="freeLine">0</span></div>
-<div id="resultado"></div>
-<div id="bonusHint"></div>
+    <div class="slot-selector">
+      <div class="slot-card active">
+        <div style="font-size:36px">🐉</div>
+        <strong>Asian Dragon</strong>
+        <div class="game-desc">Activo</div>
+      </div>
+      <div class="slot-card disabled">
+        <div style="font-size:36px">🍒</div>
+        <strong>Clásico</strong>
+        <div class="game-desc">Próximamente</div>
+      </div>
+      <div class="slot-card disabled">
+        <div style="font-size:36px">🍉</div>
+        <strong>Frutal</strong>
+        <div class="game-desc">Próximamente</div>
+      </div>
+    </div>
 
-<!-- 🎰 GRID 3x5 REAL -->
-<div class="grid">
+    <div class="grid">
+      <div class="row">
+        <div class="reel" id="c1_0"><img id="img-c1_0" alt=""></div>
+        <div class="reel" id="c1_1"><img id="img-c1_1" alt=""></div>
+        <div class="reel" id="c1_2"><img id="img-c1_2" alt=""></div>
+        <div class="reel" id="c1_3"><img id="img-c1_3" alt=""></div>
+        <div class="reel" id="c1_4"><img id="img-c1_4" alt=""></div>
+      </div>
 
-  <!-- FILA 1 -->
-  <div class="row">
-    <div class="reel" id="c1_0"><img id="img-c1_0"></div>
-    <div class="reel" id="c1_1"><img id="img-c1_1"></div>
-    <div class="reel" id="c1_2"><img id="img-c1_2"></div>
-    <div class="reel" id="c1_3"><img id="img-c1_3"></div>
-    <div class="reel" id="c1_4"><img id="img-c1_4"></div>
+      <div class="row">
+        <div class="reel" id="c2_0"><img id="img-c2_0" alt=""></div>
+        <div class="reel" id="c2_1"><img id="img-c2_1" alt=""></div>
+        <div class="reel" id="c2_2"><img id="img-c2_2" alt=""></div>
+        <div class="reel" id="c2_3"><img id="img-c2_3" alt=""></div>
+        <div class="reel" id="c2_4"><img id="img-c2_4" alt=""></div>
+      </div>
+
+      <div class="row">
+        <div class="reel" id="c3_0"><img id="img-c3_0" alt=""></div>
+        <div class="reel" id="c3_1"><img id="img-c3_1" alt=""></div>
+        <div class="reel" id="c3_2"><img id="img-c3_2" alt=""></div>
+        <div class="reel" id="c3_3"><img id="img-c3_3" alt=""></div>
+        <div class="reel" id="c3_4"><img id="img-c3_4" alt=""></div>
+      </div>
+    </div>
+
+    <input id="apuesta" type="number" placeholder="Apuesta">
+    <div>
+      <button id="spinBtn" type="button" onclick="jugar()">🎰 GIRAR</button>
+      <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+    </div>
+
+    <p id="resultado"></p>
+    <p id="detallePago"></p>
+    <p id="bonusHint"></p>
+
+    <audio id="spinSound" src="https://www.myinstants.com/media/sounds/slot-machine.mp3"></audio>
+    <audio id="winSound" src="https://www.myinstants.com/media/sounds/win.mp3"></audio>
   </div>
 
-  <!-- FILA 2 -->
-  <div class="row">
-    <div class="reel" id="c2_0"><img id="img-c2_0"></div>
-    <div class="reel" id="c2_1"><img id="img-c2_1"></div>
-    <div class="reel" id="c2_2"><img id="img-c2_2"></div>
-    <div class="reel" id="c2_3"><img id="img-c2_3"></div>
-    <div class="reel" id="c2_4"><img id="img-c2_4"></div>
-  </div>
-
-  <!-- FILA 3 -->
-  <div class="row">
-    <div class="reel" id="c3_0"><img id="img-c3_0"></div>
-    <div class="reel" id="c3_1"><img id="img-c3_1"></div>
-    <div class="reel" id="c3_2"><img id="img-c3_2"></div>
-    <div class="reel" id="c3_3"><img id="img-c3_3"></div>
-    <div class="reel" id="c3_4"><img id="img-c3_4"></div>
-  </div>
-
-</div>
-
-<br>
-
-<input id="apuesta" type="number" placeholder="Apuesta">
-<br><br>
-
-<button id="spinBtn" onclick="jugar()">🎰 GIRAR</button>
-
-<br><br>
-
-<!-- 🔊 SONIDOS -->
-<audio id="spinSound" src="https://www.myinstants.com/media/sounds/slot-machine.mp3"></audio>
-<audio id="winSound" src="https://www.myinstants.com/media/sounds/win.mp3"></audio>
-
-<script src="slots.js"></script>
-
+  <script src="/slots.js"></script>
 </body>
 </html>
