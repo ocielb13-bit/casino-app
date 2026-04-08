@@ -1,14 +1,47 @@
-const username = localStorage.getItem("username");
+async function api(path, options = {}) {
+  const token = localStorage.getItem("token");
 
-if (!username) {
-  window.location.href = "/";
+  const res = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Error");
+  return data;
 }
 
-document.getElementById("welcome").innerText = "Bienvenido " + username;
+async function loadCasino() {
+  const me = await api("/api/me");
+  const info = await api("/api/game-info");
 
-// (Opcional después lo conectamos al saldo real)
+  document.getElementById("welcome").textContent = `Bienvenido ${me.username}`;
+  document.getElementById("balance").textContent = me.balance;
+  document.getElementById("winRate").textContent = info.win_rate;
+  document.getElementById("multiplier").textContent = info.multiplier;
 
-function logout() {
+  if (me.role === "admin") {
+    document.getElementById("adminCard").style.display = "block";
+  }
+}
+
+async function logout() {
   localStorage.clear();
+  try {
+    await api("/api/logout", { method: "POST" });
+  } catch {}
   window.location.href = "/";
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await loadCasino();
+  } catch {
+    localStorage.clear();
+    window.location.href = "/";
+  }
+});
