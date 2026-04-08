@@ -21,9 +21,9 @@ async function loadCasino() {
 
   document.getElementById("welcome").textContent = `Bienvenido ${me.username}`;
   document.getElementById("balance").textContent = me.balance;
-  document.getElementById("winRate").textContent = info.win_rate;
   document.getElementById("multiplier").textContent = info.multiplier;
 
+  // mostrar acceso admin si corresponde
   if (me.role === "admin") {
     document.getElementById("adminCard").style.display = "block";
   }
