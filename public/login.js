@@ -1,6 +1,8 @@
+console.log("LOGIN JS CARGADO");
+
 async function login() {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
   const errorText = document.getElementById("error");
 
   errorText.innerText = "Cargando...";
@@ -17,7 +19,7 @@ async function login() {
     const data = await res.json();
 
     if (!data.success) {
-      errorText.innerText = data.error;
+      errorText.innerText = data.error || "Error";
       return;
     }
 
@@ -30,8 +32,7 @@ async function login() {
     } else {
       window.location.href = "/casino.html";
     }
-
-  } catch (err) {
+  } catch {
     errorText.innerText = "Error de conexión con el servidor";
   }
 }
