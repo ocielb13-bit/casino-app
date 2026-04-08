@@ -1,20 +1,16 @@
-// admin.js - panel para crear, borrar y modificar usuarios + RTP
-
-async function api(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+async function api(path, options = {}) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...(options.headers || {})
+    },
     ...options
   });
 
-  let data = {};
-  try {
-    data = await res.json();
-  } catch {}
-
-  if (!res.ok) {
-    throw new Error(data.error || "Error");
-  }
-
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Error");
   return data;
 }
 
@@ -31,6 +27,7 @@ async function loadMe() {
     }
     document.getElementById("adminLine").textContent = `Admin: ${me.username}`;
   } catch {
+    localStorage.removeItem("token");
     window.location.href = "/";
   }
 }
@@ -39,32 +36,42 @@ async function loadSettings() {
   const settings = await api("/api/admin/settings");
 
   document.getElementById("currentRtp").textContent = settings.slot_rtp;
-  document.getElementById("currentDefaultBalance").textContent = settings.default_balance;
   document.getElementById("currentJackpot").textContent = settings.jackpot_bank;
+  document.getElementById("currentDefaultBalance").textContent = settings.default_balance;
 
-  document.getElementById("rtpInput").value = settings.slot_rtp;
-  document.getElementById("defaultBalanceInput").value = settings.default_balance;
-  document.getElementById("jackpotInput").value = settings.jackpot_bank;
+  document.getElementById("slot_rtp").value = settings.slot_rtp;
+  document.getElementById("jackpot_bank").value = settings.jackpot_bank;
+  document.getElementById("default_balance").value = settings.default_balance;
+  document.getElementById("slot_pay_3").value = settings.slot_pay_3;
+  document.getElementById("slot_pay_4").value = settings.slot_pay_4;
+  document.getElementById("slot_pay_5").value = settings.slot_pay_5;
+  document.getElementById("roulette_payout").value = settings.roulette_payout;
 }
 
 async function saveSettings() {
-  const slot_rtp = parseFloat(document.getElementById("rtpInput").value);
-  const default_balance = parseInt(document.getElementById("defaultBalanceInput").value, 10);
-  const jackpot_bank = parseInt(document.getElementById("jackpotInput").value, 10);
+  const payload = {
+    slot_rtp: parseFloat(document.getElementById("slot_rtp").value),
+    jackpot_bank: parseInt(document.getElementById("jackpot_bank").value, 10),
+    default_balance: parseInt(document.getElementById("default_balance").value, 10),
+    slot_pay_3: parseInt(document.getElementById("slot_pay_3").value, 10),
+    slot_pay_4: parseInt(document.getElementById("slot_pay_4").value, 10),
+    slot_pay_5: parseInt(document.getElementById("slot_pay_5").value, 10),
+    roulette_payout: parseInt(document.getElementById("roulette_payout").value, 10)
+  };
 
   await api("/api/admin/settings", {
     method: "PUT",
-    body: JSON.stringify({ slot_rtp, default_balance, jackpot_bank })
+    body: JSON.stringify(payload)
   });
 
   await loadSettings();
-  await loadUsers();
 }
 
 async function createUser() {
   const username = document.getElementById("newUser").value.trim();
   const password = document.getElementById("newPass").value.trim();
   const balance = parseInt(document.getElementById("newBalance").value, 10);
+  const role = document.getElementById("newRole").value;
 
   if (!username || !password) {
     alert("Poné usuario y contraseña");
@@ -73,12 +80,13 @@ async function createUser() {
 
   await api("/api/admin/users", {
     method: "POST",
-    body: JSON.stringify({ username, password, balance })
+    body: JSON.stringify({ username, password, balance, role })
   });
 
   document.getElementById("newUser").value = "";
   document.getElementById("newPass").value = "";
   document.getElementById("newBalance").value = "";
+  document.getElementById("newRole").value = "player";
 
   await loadUsers();
 }
@@ -88,7 +96,6 @@ async function addBalance(id, delta) {
     method: "PATCH",
     body: JSON.stringify({ delta })
   });
-
   await loadUsers();
 }
 
@@ -102,6 +109,15 @@ async function setBalance(id, inputId) {
   await api(`/api/admin/users/${id}/balance`, {
     method: "PUT",
     body: JSON.stringify({ balance: value })
+  });
+
+  await loadUsers();
+}
+
+async function setRole(id, role) {
+  await api(`/api/admin/users/${id}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role })
   });
 
   await loadUsers();
@@ -140,13 +156,16 @@ function renderUsers(users) {
         <button type="button" onclick="setBalance(${u.id}, 'balance-${u.id}')">Guardar saldo</button>
         <button type="button" onclick="addBalance(${u.id}, 100)">+100</button>
         <button type="button" onclick="addBalance(${u.id}, -100)">-100</button>
+        <button type="button" onclick="setRole(${u.id}, '${u.role === 'admin' ? 'player' : 'admin'}')">
+          ${u.role === "admin" ? "Quitar admin" : "Hacer admin"}
+        </button>
         <button type="button" class="danger" onclick="deleteUser(${u.id}, '${u.username}')">Eliminar</button>
       </div>
     `;
 
-    if (u.role === "admin") {
+    if (u.username === "admin" && u.role === "admin") {
       row.querySelector(".danger").disabled = true;
-      row.querySelector(".danger").textContent = "Admin";
+      row.querySelector(".danger").textContent = "Admin principal";
     }
 
     box.appendChild(row);
@@ -159,7 +178,8 @@ async function loadUsers() {
 }
 
 async function logout() {
-  await api("/api/logout", { method: "POST" });
+  localStorage.removeItem("token");
+  try { await api("/api/logout", { method: "POST" }); } catch {}
   window.location.href = "/";
 }
 
