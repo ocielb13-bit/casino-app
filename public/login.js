@@ -3,8 +3,8 @@ const form = document.getElementById("loginForm");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const username = usernameInput.value;
-  const password = passwordInput.value;
+  const username = document.getElementById("usernameInput").value;
+  const password = document.getElementById("passwordInput").value;
 
   const res = await fetch("/api/login", {
     method: "POST",
