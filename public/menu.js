@@ -1,31 +1,22 @@
-// menu.js - muestra usuario y saldo, navega a los juegos
-
-async function api(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+async function api(path, options = {}) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...(options.headers || {})
+    },
     ...options
   });
 
-  let data = {};
-  try {
-    data = await res.json();
-  } catch {}
-
-  if (!res.ok) {
-    throw new Error(data.error || "Error");
-  }
-
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Error");
   return data;
-}
-
-function go(page) {
-  window.location.href = `/${page}.html`;
 }
 
 async function loadMe() {
   try {
     const me = await api("/api/me");
-
     if (me.role === "admin") {
       window.location.href = "/admin.html";
       return;
@@ -36,12 +27,14 @@ async function loadMe() {
     document.getElementById("freeLine").textContent = me.free_spins || 0;
     document.getElementById("bankLine").textContent = me.free_spin_bank || 0;
   } catch {
+    localStorage.removeItem("token");
     window.location.href = "/";
   }
 }
 
 async function logout() {
-  await api("/api/logout", { method: "POST" });
+  localStorage.removeItem("token");
+  try { await api("/api/logout", { method: "POST" }); } catch {}
   window.location.href = "/";
 }
 
