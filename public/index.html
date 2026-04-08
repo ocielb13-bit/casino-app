@@ -1,26 +1,20 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Casino Login</title>
-  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="page">
-    <div class="card" style="max-width: 460px;">
-      <h1>🎰 Casino Login</h1>
-      <p class="muted">Ingresá con tu usuario y contraseña.</p>
 
-      <input id="name" placeholder="Usuario" autocomplete="username">
-      <input id="pass" type="password" placeholder="Contraseña" autocomplete="current-password">
+<h2>Login</h2>
 
-      <button type="button" onclick="login()">Entrar</button>
+<input id="username" placeholder="Usuario"><br><br>
+<input id="password" type="password" placeholder="Contraseña"><br><br>
 
-      <p id="msg"></p>
-    </div>
-  </div>
+<button onclick="login()">Entrar</button>
 
-  <script src="/login.js"></script>
+<p id="error"></p>
+
+<script src="login.js"></script>
+
 </body>
 </html>
