@@ -1,19 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
 <body>
 
-<h1>Panel Admin</h1>
+<div class="card">
 
-<p>Usuario: <span id="user"></span></p>
+  <h2>👑 Admin Panel</h2>
 
-<button onclick="logout()">Cerrar sesión</button>
+  <h3>Crear usuario</h3>
+  <input id="newUser" placeholder="Usuario">
+  <input id="newPass" placeholder="Password">
+  <button onclick="createUser()">Crear</button>
 
-<h2>Crear usuario</h2>
+  <h3>Borrar usuario</h3>
+  <input id="deleteUser" placeholder="Usuario">
+  <button onclick="deleteUser()">Borrar</button>
 
-<input id="newUser" placeholder="Usuario">
-<input id="newPass" placeholder="Contraseña">
-<button onclick="crearUsuario()">Crear</button>
+  <h3>Modificar saldo</h3>
+  <input id="balanceUser" placeholder="Usuario">
+  <input id="amount" placeholder="Cantidad (+ o -)">
+  <button onclick="updateBalance()">Aplicar</button>
 
-<script src="admin.js"></script>
+  <h3>Probabilidades</h3>
+  <input id="winRate" placeholder="Win rate %">
+  <input id="multiplier" placeholder="Multiplicador">
+  <button onclick="updateSettings()">Guardar</button>
+
+  <p id="msg"></p>
+
+</div>
+
+<script src="/admin.js"></script>
 </body>
 </html>
