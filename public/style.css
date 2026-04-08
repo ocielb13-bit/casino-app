@@ -1,5 +1,3 @@
-/* style.css - login, menu, admin y ruleta */
-
 :root {
   color-scheme: dark;
 }
@@ -95,6 +93,51 @@ button.danger {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.muted {
+  color: #9aa4b2;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.game-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(16, 22, 34, 0.95);
+  border: 1px solid rgba(255, 215, 0, 0.12);
+  border-radius: 22px;
+  padding: 18px;
+  text-align: center;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 215, 0, 0.35);
+}
+
+.game-icon {
+  font-size: 46px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.game-name {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.game-desc {
+  color: #9aa4b2;
+  font-size: 14px;
+}
+
 .user-card {
   background: #101622;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -119,8 +162,4 @@ button.danger {
 .actions > * {
   flex: 1;
   min-width: 110px;
-}
-
-small.muted {
-  color: #9aa4b2;
 }
