@@ -1,61 +1,19 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Admin</title>
-  <link rel="stylesheet" href="/style.css">
-</head>
+<html>
 <body>
-  <div class="page">
-    <div class="card">
-      <h1>👑 Panel Admin</h1>
-      <p id="adminLine" class="muted"></p>
 
-      <div class="kpi">
-        <div class="pill">RTP slots: <strong id="currentRtp">96</strong>%</div>
-        <div class="pill">Jackpot: <strong id="currentJackpot">1000</strong></div>
-        <div class="pill">Saldo base: <strong id="currentDefaultBalance">1000</strong></div>
-      </div>
+<h1>Panel Admin</h1>
 
-      <h3>Ajustes globales</h3>
-      <div class="row">
-        <input id="slot_rtp" type="number" step="0.1" min="70" max="99.9" placeholder="RTP slots">
-        <input id="jackpot_bank" type="number" min="1000" placeholder="Jackpot">
-        <input id="default_balance" type="number" min="0" placeholder="Saldo base">
-      </div>
-      <div class="row">
-        <input id="slot_pay_3" type="number" min="0" placeholder="Pago 3 iguales">
-        <input id="slot_pay_4" type="number" min="0" placeholder="Pago 4 iguales">
-        <input id="slot_pay_5" type="number" min="0" placeholder="Pago 5 iguales">
-        <input id="roulette_payout" type="number" min="1" placeholder="Pago ruleta">
-      </div>
-      <button type="button" onclick="saveSettings()">Guardar ajustes</button>
+<p>Usuario: <span id="user"></span></p>
 
-      <hr style="border-color: rgba(255,255,255,.08); margin: 20px 0;">
+<button onclick="logout()">Cerrar sesión</button>
 
-      <h3>Crear usuario</h3>
-      <div class="row">
-        <input id="newUser" placeholder="Usuario nuevo">
-        <input id="newPass" type="password" placeholder="Contraseña">
-        <input id="newBalance" type="number" placeholder="Saldo inicial">
-        <select id="newRole">
-          <option value="player">Player</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <button type="button" onclick="createUser()">Crear usuario</button>
+<h2>Crear usuario</h2>
 
-      <h3>Usuarios guardados</h3>
-      <div id="usersList"></div>
+<input id="newUser" placeholder="Usuario">
+<input id="newPass" placeholder="Contraseña">
+<button onclick="crearUsuario()">Crear</button>
 
-      <div class="row" style="margin-top: 16px;">
-        <button type="button" class="secondary" onclick="goMenu()">Volver al menú</button>
-        <button type="button" class="secondary" onclick="logout()">Salir</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="/admin.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>
