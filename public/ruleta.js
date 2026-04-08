@@ -1,20 +1,16 @@
-// ruleta.js - ruleta visual con sesión y saldo real
-
-async function api(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+async function api(path, options = {}) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...(options.headers || {})
+    },
     ...options
   });
 
-  let data = {};
-  try {
-    data = await res.json();
-  } catch {}
-
-  if (!res.ok) {
-    throw new Error(data.error || "Error");
-  }
-
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Error");
   return data;
 }
 
@@ -29,6 +25,7 @@ async function loadMe() {
     document.getElementById("playerLine").textContent = `Usuario: ${me.username}`;
     document.getElementById("saldo").textContent = me.balance;
   } catch {
+    localStorage.removeItem("token");
     window.location.href = "/";
   }
 }
