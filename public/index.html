@@ -1,39 +1,26 @@
-async function login() {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-  const errorText = document.getElementById("error");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Casino Login</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page">
+    <div class="card" style="max-width: 460px;">
+      <h1>🎰 Casino Login</h1>
+      <p class="muted">Ingresá con tu usuario y contraseña.</p>
 
-  errorText.innerText = "Cargando...";
+      <input id="username" placeholder="Usuario" autocomplete="username">
+      <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
 
-  try {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ username, password })
-    });
+      <button type="button" onclick="login()">Entrar</button>
+      <p id="error" class="muted"></p>
+    </div>
+  </div>
 
-    const data = await res.json();
-
-    if (!data.success) {
-      errorText.innerText = data.error;
-      return;
-    }
-
-    // guardar sesión
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("username", data.username);
-    localStorage.setItem("role", data.role);
-
-    // redirección
-    if (data.role === "admin") {
-      window.location.href = "/admin.html";
-    } else {
-      window.location.href = "/casino.html";
-    }
-
-  } catch (err) {
-    errorText.innerText = "Error de conexión con el servidor";
-  }
-}
+  <!-- 🔥 IMPORTANTE: SOLO LINKEA EL JS, NO PEGAR CODIGO ACA -->
+  <script src="/login.js"></script>
+</body>
+</html>
