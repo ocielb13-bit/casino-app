@@ -1,60 +1,80 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ruleta</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎲 Ruleta - Casino Virtual</title>
   <link rel="stylesheet" href="/style.css">
-  <style>
-    .wheel-box {
-      width: 220px;
-      height: 220px;
-      margin: 18px auto;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle, #1f2a3e 0%, #0f131c 60%, #050608 100%);
-      border: 8px solid rgba(255, 215, 0, 0.55);
-      box-shadow: 0 0 24px rgba(255, 215, 0, 0.18);
-      font-size: 72px;
-      font-weight: 900;
-      color: #fff;
-    }
-
-    .wheel-box.spinning {
-      animation: pulse 0.25s infinite alternate;
-    }
-
-    @keyframes pulse {
-      from { transform: scale(1); }
-      to { transform: scale(1.03); }
-    }
-  </style>
 </head>
 <body>
   <div class="page">
-    <div class="card" style="max-width: 520px;">
-      <h1>🎡 Ruleta</h1>
-      <p id="playerLine" class="muted"></p>
-
-      <div class="kpi">
-        <div class="pill">Saldo: <strong id="saldo">0</strong></div>
+    <div class="card">
+      <!-- Header -->
+      <div class="user-top">
+        <div>
+          <h1>🎲 Ruleta Pro</h1>
+          <p class="muted" id="playerInfo">Cargando jugador...</p>
+        </div>
+        <div style="text-align: right;">
+          <strong>Saldo: <span id="balanceDisplay" style="color:#ffd700;">1000</span></strong>
+          <button type="button" class="secondary" onclick="goToCasino()">← Volver al Casino</button>
+        </div>
       </div>
 
-      <div id="wheel" class="wheel-box">0</div>
-      <p class="muted">Elegí un número del 0 al 36 y probá suerte.</p>
+      <div class="roulette-container">
+        <!-- Rueda con animación realista -->
+        <canvas id="rouletteCanvas" width="560" height="560"></canvas>
 
-      <input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
-      <input id="apuesta" type="number" min="1" placeholder="Apuesta">
+        <!-- Fichas para apostar -->
+        <div class="row" style="justify-content: center; margin: 20px 0;">
+          <button class="chip-btn" onclick="selectedChip=10">10</button>
+          <button class="chip-btn" onclick="selectedChip=50">50</button>
+          <button class="chip-btn" onclick="selectedChip=100">100</button>
+          <button class="chip-btn" onclick="selectedChip=500">500</button>
+        </div>
 
-      <button type="button" onclick="jugar()">Girar</button>
-      <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+        <!-- Mesa de apuestas mejorada -->
+        <div id="betTable" class="roulette-table">
+          <!-- Se llena dinámicamente desde ruleta.js -->
+        </div>
 
-      <p id="resultado"></p>
+        <button onclick="spinRoulette()" class="big-btn">🚀 GIRAR LA RULETA</button>
+      </div>
+
+      <p id="rouletteMsg" style="margin-top:20px; font-size:1.3rem; min-height:30px;"></p>
+
+      <!-- Botones inferiores -->
+      <div class="row" style="margin-top: 30px;">
+        <button type="button" class="secondary" onclick="clearBets()">Limpiar apuestas</button>
+        <button type="button" class="secondary" onclick="goToCasino()">Volver al menú</button>
+      </div>
     </div>
   </div>
 
   <script src="/ruleta.js"></script>
+  <script>
+    // Inicialización automática
+    window.onload = function() {
+      initRoulette();
+      loadPlayerInfo(); // usa tu función existente de auth
+    };
+
+    // Función auxiliar para volver al casino (ya existía)
+    function goToCasino() {
+      window.location.href = "/casino.html";
+    }
+
+    function loadPlayerInfo() {
+      // Reutiliza tu lógica de /api/me
+      fetch('/api/me', {
+        headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') }
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('playerInfo').textContent = `Jugador: ${data.username}`;
+        document.getElementById('balanceDisplay').textContent = data.balance;
+      });
+    }
+  </script>
 </body>
 </html>
