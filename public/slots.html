@@ -1,112 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Asian Dragon Slot</title>
-  <style>
-    body {
-      background: #0b0f1a;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-    }
+<meta charset="UTF-8">
+<title>Asian Dragon Slot</title>
 
-    .grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
-      margin: 20px 0;
-    }
+<link rel="stylesheet" href="slot.css">
 
-    .row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .reel {
-      width: 80px;
-      height: 80px;
-      background: #111;
-      border: 2px solid #333;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .reel img {
-      width: 70px;
-      height: 70px;
-    }
-
-    .win-low { border-color: #00ff99; }
-    .win-mid { border-color: #00ccff; }
-    .win-high { border-color: #ffcc00; }
-    .win-jackpot { border-color: #ff0000; }
-
-    button {
-      padding: 10px 20px;
-      font-size: 18px;
-      background: gold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    input {
-      padding: 8px;
-      font-size: 16px;
-      width: 100px;
-      text-align: center;
-    }
-
-  </style>
 </head>
 <body>
 
-  <h1>🐉 Asian Dragon Slot</h1>
+<h1>🐉 Asian Dragon Slot</h1>
 
-  <div id="playerLine"></div>
-  <div>💰 Saldo: <span id="saldo">0</span></div>
-  <div>🎰 Free Spins: <span id="freeLine">0</span></div>
-  <div>🏦 Banco FS: <span id="bankLine">0</span></div>
-  <div>💎 Jackpot: <span id="jackpotLine">0</span></div>
+<div id="playerLine"></div>
+<div>💰 Saldo: <span id="saldo">0</span></div>
+<div>🎰 Free Spins: <span id="freeLine">0</span></div>
+<div id="resultado"></div>
+<div id="bonusHint"></div>
 
-  <div class="grid">
+<!-- 🎰 GRID 3x5 REAL -->
+<div class="grid">
 
-    <!-- TOP -->
-    <div class="row">
-      <div class="reel" id="tr1"><img id="img-tr1"></div>
-      <div class="reel" id="tr2"><img id="img-tr2"></div>
-      <div class="reel" id="tr3"><img id="img-tr3"></div>
-    </div>
-
-    <!-- ROW 1 -->
-    <div class="row">
-      <div class="reel" id="c1_0"><img id="img-c1_0"></div>
-      <div class="reel" id="c1_1"><img id="img-c1_1"></div>
-      <div class="reel" id="c1_2"><img id="img-c1_2"></div>
-      <div class="reel" id="c1_3"><img id="img-c1_3"></div>
-      <div class="reel" id="c1_4"><img id="img-c1_4"></div>
-    </div>
-
-    <!-- ROW 2 -->
-    <div class="row">
-      <div class="reel" id="c2_0"><img id="img-c2_0"></div>
-      <div class="reel" id="c2_1"><img id="img-c2_1"></div>
-      <div class="reel" id="c2_2"><img id="img-c2_2"></div>
-      <div class="reel" id="c2_3"><img id="img-c2_3"></div>
-      <div class="reel" id="c2_4"><img id="img-c2_4"></div>
-    </div>
-
-    <!-- BOTTOM -->
-    <div class="row">
-      <div class="reel" id="br1"><img id="img-br1"></div>
-      <div class="reel" id="br2"><img id="img-br2"></div>
-      <div class="reel" id="br3"><img id="img-br3"></div>
-    </div>
-
+  <!-- FILA 1 -->
+  <div class="row">
+    <div class="reel" id="c1_0"><img id="img-c1_0"></div>
+    <div class="reel" id="c1_1"><img id="img-c1_1"></div>
+    <div class="reel" id="c1_2"><img id="img-c1_2"></div>
+    <div class="reel" id="c1_3"><img id="img-c1_3"></div>
+    <div class="reel" id="c1_4"><img id="img-c1_4"></div>
   </div>
 
-  <div>
+  <!-- FILA 2 -->
+  <div class="row">
+    <div class="reel" id="c2_0"><img id="img-c2_0"></div>
+    <div class="reel" id="c2_1"><img id="img-c2_1"></div>
+    <div class="reel" id="c2_2"><img id="img-c2_2"></div>
+    <div class="reel" id="c2_3"><img id="img-c2_3"></div>
+    <div class="reel" id="c2_4"><img id="img-c2_4"></div>
+  </div>
+
+  <!-- FILA 3 -->
+  <div class="row">
+    <div class="reel" id="c3_0"><img id="img-c3_0"></div>
+    <div class="reel" id="c3_1"><img id="img-c3_1"></div>
+    <div class="reel" id="c3_2"><img id="img-c3_2"></div>
+    <div class="reel" id="c3_3"><img id="img-c3_3"></div>
+    <div class="reel" id="c3_4"><img id="img-c3_4"></div>
+  </div>
+
+</div>
+
+<br>
+
+<input id="apuesta" type="number" placeholder="Apuesta">
+<br><br>
+
+<button id="spinBtn" onclick="jugar()">🎰 GIRAR</button>
+
+<br><br>
+
+<!-- 🔊 SONIDOS -->
+<audio id="spinSound" src="https://www.myinstants.com/media/sounds/slot-machine.mp3"></audio>
+<audio id="winSound" src="https://www.myinstants.com/media/sounds/win.mp3"></audio>
+
+<script src="slots.js"></script>
+
+</body>
+</html>
