@@ -1,30 +1,39 @@
-const token = localStorage.getItem("token");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
 
-if (!token) window.location.href = "/";
+<div class="card">
 
-document.getElementById("user").innerText =
-  localStorage.getItem("username");
+  <h2>👑 Admin Panel</h2>
 
-function logout() {
-  localStorage.clear();
-  window.location.href = "/";
-}
+  <h3>Crear usuario</h3>
+  <input id="newUser" placeholder="Usuario">
+  <input id="newPass" placeholder="Password">
+  <button onclick="createUser()">Crear</button>
 
-async function crearUsuario() {
-  const username = newUser.value;
-  const password = newPass.value;
+  <h3>Borrar usuario</h3>
+  <input id="deleteUser" placeholder="Usuario">
+  <button onclick="deleteUser()">Borrar</button>
 
-  const res = await fetch("/api/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ username, password })
-  });
+  <h3>Modificar saldo</h3>
+  <input id="balanceUser" placeholder="Usuario">
+  <input id="amount" placeholder="Cantidad (+ o -)">
+  <button onclick="updateBalance()">Aplicar</button>
 
-  const data = await res.json();
+  <h3>Probabilidades</h3>
+  <input id="winRate" placeholder="Win rate %">
+  <input id="multiplier" placeholder="Multiplicador">
+  <button onclick="updateSettings()">Guardar</button>
 
-  if (data.success) alert("Usuario creado");
-  else alert(data.error);
-}
+  <p id="msg"></p>
+
+</div>
+
+<script src="/admin.js"></script>
+</body>
+</html>
