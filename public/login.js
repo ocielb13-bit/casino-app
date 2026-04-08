@@ -1,31 +1,37 @@
-const form = document.getElementById("loginForm");
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const errorText = document.getElementById("error");
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+  errorText.innerText = "Cargando...";
 
-  const username = document.getElementById("usernameInput").value;
-  const password = document.getElementById("passwordInput").value;
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ username, password })
+    });
 
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ username, password })
-  });
+    const data = await res.json();
 
-  const data = await res.json();
+    if (!data.success) {
+      errorText.innerText = data.error;
+      return;
+    }
 
-  if (!data.success) {
-    alert(data.error);
-    return;
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("username", data.username);
+    localStorage.setItem("role", data.role);
+
+    if (data.role === "admin") {
+      window.location.href = "/admin.html";
+    } else {
+      window.location.href = "/casino.html";
+    }
+
+  } catch (err) {
+    errorText.innerText = "Error de conexión con el servidor";
   }
-
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("username", data.username);
-  localStorage.setItem("role", data.role);
-
-  if (data.role === "admin") {
-    window.location.href = "/admin.html";
-  } else {
-    window.location.href = "/casino.html";
-  }
-});
+}
