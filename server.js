@@ -1,4 +1,4 @@
-import express from "express";
+²import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -357,6 +357,71 @@ app.get("/api/test", async (req, res) => {
   const { data, error } = await supabase.from("app_users").select("*");
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true, users: data });
+});
+
+// Añadir estos endpoints a tu server.js actual
+
+// --- ENDPOINT RULETA ---
+app.post("/api/roulette/spin", authRequired, async (req, res) => {
+    const { number, amount } = req.body;
+    const userId = req.user.id;
+    const betAmount = Math.floor(Number(amount));
+
+    if (isNaN(betAmount) || betAmount <= 0) return res.status(400).json({ error: "Apuesta inválida" });
+    if (req.user.balance < betAmount) return res.status(400).json({ error: "Saldo insuficiente" });
+
+    // 1. Calcular Resultado
+    const winningNumber = Math.floor(Math.random() * 37);
+    const winRate = await getSetting("roulette_payout", 35); // Pago 35 a 1
+    const won = winningNumber === parseInt(number);
+    const prize = won ? betAmount * winRate : 0;
+    
+    // 2. Actualizar Balance
+    const newBalance = req.user.balance - betAmount + prize;
+
+    const { error } = await supabase
+        .from("app_users")
+        .update({ balance: newBalance })
+        .eq("id", userId);
+
+    if (error) return res.status(500).json({ error: "Error al actualizar saldo" });
+
+    res.json({ 
+        success: true, 
+        result: winningNumber, 
+        win: prize, 
+        balance: newBalance 
+    });
+});
+
+// --- ENDPOINT SLOTS (Motor Pro) ---
+app.post("/api/slots/spin", authRequired, async (req, res) => {
+    const { amount } = req.body;
+    const userId = req.user.id;
+    const bet = Math.floor(Number(amount));
+
+    if (bet <= 0 || req.user.balance < bet) return res.status(400).json({ error: "Saldo insuficiente" });
+
+    const settings = await getAllSettings();
+    const symbols = ["dragon", "goldpot", "coin", "jade", "lantern", "wild", "scatter"];
+    
+    // Generar tablero 3x5
+    let board = [];
+    for(let i=0; i<3; i++) {
+        board[i] = Array.from({length: 5}, () => symbols[Math.floor(Math.random() * symbols.length)]);
+    }
+
+    // Lógica de premios simple (ejemplo: 3 iguales en fila central)
+    let win = 0;
+    const middleRow = board[1];
+    if (middleRow[0] === middleRow[1] && middleRow[1] === middleRow[2]) {
+        win = bet * settings.slot_pay_3;
+    }
+
+    const finalBalance = req.user.balance - bet + win;
+    await supabase.from("app_users").update({ balance: finalBalance }).eq("id", userId);
+
+    res.json({ success: true, board, win, balance: finalBalance });
 });
 
 app.get("*", (req, res) => {
