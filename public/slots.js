@@ -1,20 +1,21 @@
 <!-- public/slots.js -->
 // =====================================================
 // SLOTS ASIAN DRAGON - 5 reels × 3 filas
-// Rutas corregidas con tus archivos reales (assets/)
+// RUTA CORRECTA FINAL (según tus capturas):
+// /assets/symbols/asian/
 // =====================================================
 
 const SYMBOLS = [
-  { name: "coin",     src: "/assets/coin.png" },
-  { name: "dragon",   src: "/assets/dragon.png" },
-  { name: "goldpot",  src: "/assets/goldpot.png" },
-  { name: "jade",     src: "/assets/jade.png" },
-  { name: "lantern",  src: "/assets/lantern.png" },
-  { name: "scatter",  src: "/assets/scatter.png" },
-  { name: "wild",     src: "/assets/wild.png" }
+  { name: "coin",     src: "/assets/symbols/asian/coin.png" },
+  { name: "dragon",   src: "/assets/symbols/asian/dragon.png" },
+  { name: "goldpot",  src: "/assets/symbols/asian/goldpot.png" },
+  { name: "jade",     src: "/assets/symbols/asian/jade.png" },
+  { name: "lantern",  src: "/assets/symbols/asian/lantern.png" },
+  { name: "scatter",  src: "/assets/symbols/asian/scatter.png" },
+  { name: "wild",     src: "/assets/symbols/asian/wild.png" }
 ];
 
-let balance = 1229;   // se actualizará desde Supabase
+let balance = 1229;
 let currentBet = 200;
 
 // Obtener símbolo aleatorio
@@ -34,13 +35,14 @@ function createOrUpdateGrid(finalResult = null) {
     
     container.innerHTML = `
       <img src="${symbol.src}" 
-           onerror="this.style.display='none'; this.parentElement.innerHTML = '<span style=\"font-size:58px\">${symbol.name === 'wild' ? '🔥' : symbol.name === 'dragon' ? '🐉' : '🪙'}</span>'"
-           style="width:88%; height:88%; object-fit:contain; filter: drop-shadow(0 0 12px #facc15);">
+           onerror="this.style.display='none'; 
+                    this.parentElement.innerHTML = '<span style=\"font-size:58px\">${symbol.name === 'wild' ? '🔥' : symbol.name === 'dragon' ? '🐉' : '🪙'}</span>'"
+           style="width:88%; height:88%; object-fit:contain; filter: drop-shadow(0 0 15px #facc15);">
     `;
   });
 }
 
-// Función principal de giro
+// Función de giro
 async function spin() {
   const betInput = document.getElementById('betAmount');
   currentBet = parseInt(betInput.value) || 200;
@@ -50,13 +52,12 @@ async function spin() {
     return;
   }
 
-  // Descontar apuesta
   balance -= currentBet;
   document.getElementById('balance').textContent = balance;
 
   document.getElementById('winMessage').innerHTML = `<span style="color:#facc15">🎰 GIRANDO...</span>`;
 
-  // Animación de giro rápido (25 cambios)
+  // Animación de giro
   const totalSpins = 25;
   for (let i = 0; i < totalSpins; i++) {
     createOrUpdateGrid();
@@ -67,7 +68,7 @@ async function spin() {
   const finalResult = Array.from({length: 15}, () => getRandomSymbol());
   createOrUpdateGrid(finalResult);
 
-  // Cálculo simple de ganancia (puedes mejorarlo después)
+  // Cálculo de ganancia simple
   let winnings = 0;
   const rows = [
     finalResult.slice(0, 5),
@@ -79,7 +80,7 @@ async function spin() {
     const names = row.map(s => s.name);
     const unique = [...new Set(names)];
     if (unique.length === 1 || (unique.length === 2 && unique.includes('wild'))) {
-      winnings += currentBet * 12;   // x12 por línea
+      winnings += currentBet * 12;
     }
   });
 
@@ -96,10 +97,9 @@ async function spin() {
 
 // Inicializar
 function initSlots() {
-  console.log('%c✅ Asian Dragon Slots cargados con imágenes reales', 'color:#facc15;font-size:16px');
-  createOrUpdateGrid();   // muestra los símbolos al cargar
+  console.log('%c✅ Asian Dragon Slots cargados con ruta /assets/symbols/asian/', 'color:#facc15;font-size:16px');
+  createOrUpdateGrid();
 }
 
-// Exponer funciones
 window.spin = spin;
 window.initSlots = initSlots;
