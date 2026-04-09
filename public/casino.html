@@ -1,48 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Casino</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎰 Asian Dragon Slot</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="page">
     <div class="card">
-      <h1>🎰 Casino</h1>
-      <p class="muted" id="welcome">Cargando...</p>
 
-      <div class="kpi">
-        <div class="pill">💰 Saldo: <strong id="balance">0</strong></div>
-        <div class="pill">⚡ Multiplicador: <strong id="multiplier">2</strong></div>
+      <!-- Header -->
+      <div class="user-top">
+        <div>
+          <h1>🎰 Asian Dragon Slot</h1>
+          <p class="muted" id="playerInfo">Cargando...</p>
+        </div>
+        <button type="button" class="secondary" onclick="goToMenu()">Volver al Menú</button>
       </div>
 
-      <div class="grid-cards">
-        <a class="link-card" href="/slots.html">
-          <div class="icon">🐉</div>
-          <div class="title">Slots</div>
-          <div class="desc">Asian Dragon</div>
-        </a>
-
-        <a class="link-card" href="/ruleta.html">
-          <div class="icon">🎡</div>
-          <div class="title">Ruleta</div>
-          <div class="desc">Mesa visual</div>
-        </a>
-
-        <a class="link-card" href="/admin.html" id="adminCard" style="display:none;">
-          <div class="icon">👑</div>
-          <div class="title">Admin</div>
-          <div class="desc">Panel de control</div>
-        </a>
+      <!-- Info del jugador -->
+      <div class="row" style="background:#1a1a2e; padding:15px; border-radius:12px; margin-bottom:20px;">
+        <div><strong>Usuario:</strong> <span id="username">-</span></div>
+        <div><strong>Saldo:</strong> <span id="balance" style="color:#ffd700;">0</span></div>
+        <div><strong>Free Spins:</strong> <span id="freeSpins">0</span></div>
+        <div><strong>Banco FS:</strong> <span id="freeSpinBank">0</span></div>
+        <div><strong>RTP:</strong> 96%</div>
+        <div><strong>Jackpot:</strong> <span id="jackpot">1000</span></div>
       </div>
 
-      <div class="row" style="margin-top: 16px;">
-        <button type="button" class="secondary" onclick="logout()">Salir</button>
+      <!-- Selector de temas -->
+      <div class="row" style="justify-content:center; margin-bottom:20px;">
+        <div onclick="changeTheme('dragon')" style="cursor:pointer; text-align:center; padding:10px 20px; background:#1a1a2e; border-radius:10px; margin:0 10px;">
+          <div style="font-size:40px;">🐉</div>
+          <strong>Asian Dragon</strong><br>
+          <small style="color:#0f0;">Activo</small>
+        </div>
+        <div onclick="changeTheme('classic')" style="cursor:pointer; text-align:center; padding:10px 20px; background:#1a1a2e; border-radius:10px; margin:0 10px; opacity:0.5;">
+          <div style="font-size:40px;">🍒</div>
+          <strong>Clásico</strong><br>
+          <small>Próximamente</small>
+        </div>
+        <div onclick="changeTheme('frutal')" style="cursor:pointer; text-align:center; padding:10px 20px; background:#1a1a2e; border-radius:10px; margin:0 10px; opacity:0.5;">
+          <div style="font-size:40px;">🍉</div>
+          <strong>Frutal</strong><br>
+          <small>Próximamente</small>
+        </div>
       </div>
+
+      <!-- === RODILLOS (esto era lo que faltaba) === -->
+      <div style="display:flex; justify-content:center; gap:20px; margin:30px 0;">
+        <div id="reel1" class="reel"></div>
+        <div id="reel2" class="reel"></div>
+        <div id="reel3" class="reel"></div>
+      </div>
+
+      <!-- Apuesta -->
+      <div class="row" style="justify-content:center; align-items:center; gap:15px;">
+        <label><strong>Apuesta:</strong></label>
+        <input id="betAmount" type="number" value="2000" style="width:120px; text-align:center; font-size:1.2rem;">
+        <button onclick="spin()" style="padding:14px 40px; font-size:1.3rem;">🔥 GIRAR</button>
+      </div>
+
+      <p id="winMessage" style="margin-top:20px; text-align:center; font-size:1.5rem; min-height:40px; color:#ffd700;"></p>
+
+      <script src="/slots.js"></script>
+      <script>
+        let currentTheme = 'dragon';
+
+        async function loadPlayer() {
+          try {
+            const res = await fetch('/api/me', {
+              headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+            });
+            const data = await res.json();
+            document.getElementById('username').textContent = data.username || '-';
+            document.getElementById('balance').textContent = data.balance || 0;
+            document.getElementById('freeSpins').textContent = data.free_spins || 0;
+            document.getElementById('freeSpinBank').textContent = data.free_spin_bank || 0;
+            document.getElementById('jackpot').textContent = data.jackpot_bank || 1000;
+            document.getElementById('playerInfo').textContent = `Jugando como ${data.username}`;
+          } catch(e) {
+            document.getElementById('playerInfo').textContent = 'Error de conexión';
+          }
+        }
+
+        function changeTheme(theme) {
+          currentTheme = theme;
+          alert('✅ Tema cambiado a ' + theme + ' (próximamente más temas)');
+          // Aquí puedes agregar lógica futura para cambiar símbolos
+        }
+
+        function goToMenu() {
+          window.location.href = '/';
+        }
+
+        // Inicializar todo
+        window.onload = () => {
+          loadPlayer();
+          initSlots();           // ← del slots.js mejorado
+          // Crear rodillos vacíos al inicio
+          document.getElementById('reel1').innerHTML = `<div class="reel-strip"><img src="/asset/symbol/asian/dragon.png" class="reel-symbol"></div>`;
+          document.getElementById('reel2').innerHTML = `<div class="reel-strip"><img src="/asset/symbol/asian/phoenix.png" class="reel-symbol"></div>`;
+          document.getElementById('reel3').innerHTML = `<div class="reel-strip"><img src="/asset/symbol/asian/koi.png" class="reel-symbol"></div>`;
+        };
+      </script>
     </div>
   </div>
-
-  <script src="/casino.js"></script>
 </body>
 </html>
