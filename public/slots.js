@@ -1,182 +1,112 @@
 <!-- public/slots.js -->
 // =====================================================
-// SLOTS ENHANCED - Classic + Asian Dragon
-// Mantiene TODA la lógica original + nuevas features
+// SLOTS ASIAN DRAGON - 5 reels × 3 filas (exacto como querés)
+// Funciona con tu casino.html actual
 // =====================================================
 
-const SOUNDS = {
-  spin: new Audio('/sounds/spin.mp3'),
-  stop: new Audio('/sounds/reel_stop.mp3'),
-  win: new Audio('/sounds/win.mp3'),
-  jackpot: new Audio('/sounds/jackpot.mp3'),
-  bonus: new Audio('/sounds/bonus_trigger.mp3'),
-  freeSpin: new Audio('/sounds/free_spins_start.mp3')
-};
-SOUNDS.spin.loop = true;
+const SYMBOLS = [
+  { name: "coin",     emoji: "🪙", src: "/asset/symbol/asian/coin.png" },
+  { name: "dragon",   emoji: "🐉", src: "/asset/symbol/asian/dragon.png" },
+  { name: "lantern",  emoji: "🏮", src: "/asset/symbol/asian/lantern.png" },
+  { name: "treasure", emoji: "💰", src: "/asset/symbol/asian/treasure.png" },
+  { name: "wild",     emoji: "🔥", src: "/asset/symbol/asian/wild.png" },
+  { name: "star",     emoji: "⭐", src: "/asset/symbol/asian/star.png" },
+  { name: "phoenix",  emoji: "🦅", src: "/asset/symbol/asian/phoenix.png" },
+  { name: "koi",      emoji: "🐟", src: "/asset/symbol/asian/koi.png" }
+];
 
-// Configuración (usa settings del servidor)
-let SETTINGS = {};
-let freeSpinsLeft = 0;
-let currentMultiplier = 1; // puede aumentar en bonus
-
-// Símbolos (mantén tus rutas originales y agrega los nuevos)
-const SYMBOLS = {
-  classic: [
-    { name: 'cherry', src: '/asset/symbol/classic/cherry.png' },
-    { name: 'lemon', src: '/asset/symbol/classic/lemon.png' },
-    { name: 'orange', src: '/asset/symbol/classic/orange.png' },
-    { name: 'bell', src: '/asset/symbol/classic/bell.png' },
-    { name: 'seven', src: '/asset/symbol/classic/seven.png' },
-    { name: 'bar', src: '/asset/symbol/classic/bar.png' },
-    { name: 'scatter', src: '/asset/symbol/classic/scatter.png' },   // ⭐ nuevo
-    { name: 'bonus', src: '/asset/symbol/classic/bonus.png' }       // 💎 nuevo
-  ],
-  dragon: [
-    { name: 'dragon', src: '/asset/symbol/asian/dragon.png' },
-    { name: 'phoenix', src: '/asset/symbol/asian/phoenix.png' },
-    { name: 'koi', src: '/asset/symbol/asian/koi.png' },
-    { name: 'lantern', src: '/asset/symbol/asian/lantern.png' },
-    { name: 'scatter', src: '/asset/symbol/asian/scatter.png' },
-    { name: 'bonus', src: '/asset/symbol/asian/bonus.png' }
-  ]
-};
-
-let currentStyle = 'classic'; // se cambia desde casino.html
-
-// ====================== UTILIDADES ======================
-function playSound(key) {
-  try {
-    const audio = SOUNDS[key];
-    audio.currentTime = 0;
-    audio.play();
-  } catch(e) {}
-}
+// Variables globales
+let balance = 1229; // se actualizará desde Supabase
+let currentBet = 200;
 
 function getRandomSymbol() {
-  const list = SYMBOLS[currentStyle];
-  return list[Math.floor(Math.random() * list.length)];
+  return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
 }
 
-// ====================== ANIMATION MEJORADA ======================
+// Crear o actualizar los 15 casilleros con animación
+function createOrUpdateGrid(finalResult = null) {
+  const grid = document.getElementById('slotGrid');
+  const containers = grid.querySelectorAll('.reel-symbol-container');
+
+  containers.forEach((container, index) => {
+    const symbol = finalResult ? finalResult[index] : getRandomSymbol();
+    
+    // Intenta cargar imagen real, si falla usa emoji (para que siempre funcione)
+    container.innerHTML = `
+      <img src="${symbol.src}" 
+           onerror="this.style.display='none'; this.parentElement.innerHTML = '<span style=\"font-size:52px\">${symbol.emoji}</span>'"
+           style="width:85%; max-height:100%; object-fit:contain; filter:drop-shadow(0 0 12px gold);">
+    `;
+  });
+}
+
+// Animación de giro (rápida y realista)
 async function spin() {
-  // === TU CÓDIGO EXISTENTE (balance check, bet deduction, etc.) ===
-  // NO BORRAR: aquí va tu lógica original de validación y descuento
-  // Ejemplo: await updateBalance(-betAmount); // Supabase / API
+  const betInput = document.getElementById('betAmount');
+  currentBet = parseInt(betInput.value) || 200;
 
-  const betAmount = parseInt(document.getElementById('betAmount').value) || 10;
+  // Validación simple de saldo
+  if (balance < currentBet) {
+    document.getElementById('winMessage').innerHTML = `<span style="color:#f87171">❌ Saldo insuficiente</span>`;
+    return;
+  }
 
-  playSound('spin');
+  // Descontar apuesta
+  balance -= currentBet;
+  document.getElementById('balance').textContent = balance;
 
-  // Activar animación en los 3 reels
-  document.querySelectorAll('.reel').forEach(r => r.classList.add('spinning'));
+  document.getElementById('winMessage').textContent = '🎰 GIRANDO...';
 
-  // Generar resultado final (mantén tu función original si existe)
-  const finalReels = [
-    getRandomSymbol(), getRandomSymbol(), getRandomSymbol()
+  // 1. Animación de giro (cambia símbolos muy rápido)
+  const totalSpins = 25; // cuántas veces cambia cada símbolo
+  for (let i = 0; i < totalSpins; i++) {
+    createOrUpdateGrid(); // cambia todos los símbolos
+    await new Promise(r => setTimeout(r, 60)); // velocidad del giro
+  }
+
+  // 2. Resultado final
+  const finalResult = [];
+  for (let i = 0; i < 15; i++) {
+    finalResult.push(getRandomSymbol());
+  }
+  createOrUpdateGrid(finalResult);
+
+  // 3. Calcular ganancia simple (puedes expandir después)
+  let winnings = 0;
+  // Ejemplo básico: 3 símbolos iguales en cualquier fila
+  const rows = [
+    finalResult.slice(0, 5),   // fila 1
+    finalResult.slice(5, 10),  // fila 2
+    finalResult.slice(10, 15)  // fila 3
   ];
 
-  // Parada escalonada + realista (reel 1 → 2 → 3)
-  for (let i = 0; i < 3; i++) {
-    await new Promise(resolve => setTimeout(resolve, 700 + i * 650));
-    document.querySelectorAll('.reel')[i].innerHTML = `
-      <div class="reel-strip">
-        <img src="${finalReels[i].src}" class="reel-symbol">
-      </div>`;
-    playSound('stop');
+  rows.forEach(row => {
+    const first = row[0].name;
+    if (row.every(s => s.name === first || s.name === 'wild')) {
+      winnings += currentBet * 8; // ganancia x8
+    }
+  });
+
+  if (winnings > 0) {
+    balance += winnings;
+    document.getElementById('winMessage').innerHTML = 
+      `🎉 ¡GANASTE <strong>${winnings}</strong>!`;
+    document.getElementById('balance').textContent = balance;
+  } else {
+    document.getElementById('winMessage').innerHTML = 
+      `<span style="color:#f87171">Mejor suerte la próxima 🔥</span>`;
   }
 
-  document.querySelectorAll('.reel').forEach(r => r.classList.remove('spinning'));
-  SOUNDS.spin.pause();
-
-  // === TU LÓGICA EXISTENTE DE WIN CALCULATION ===
-  const winnings = calculateWin(finalReels); // ← mantén tu función original
-  const totalWin = winnings * currentMultiplier;
-
-  // Actualizar balance (TU CÓDIGO EXISTENTE CON SUPABASE)
-  // Ejemplo: await api('/api/update-balance', { balance: newBalance });
-
-  if (totalWin > 0) {
-    playSound(totalWin >= betAmount * 15 ? 'jackpot' : 'win');
-    showWinMessage(totalWin);
-  }
-
-  // ==================== NUEVAS FEATURES ====================
-  const scatters = finalReels.filter(s => s.name === 'scatter').length;
-  if (scatters >= 3) {
-    freeSpinsLeft += 12;
-    playSound('freeSpin');
-    document.getElementById('freeSpinsCounter').textContent = freeSpinsLeft;
-    triggerFreeSpinsMode();
-  }
-
-  const bonusSymbols = finalReels.filter(s => s.name === 'bonus').length;
-  if (bonusSymbols >= 2) {
-    playSound('bonus');
-    await startBonusRound();
-  }
-
-  // Multiplicador global (usa el del servidor + posible bonus)
-  if (SETTINGS.multiplier) currentMultiplier = SETTINGS.multiplier;
+  // Actualizar saldo en Supabase (usa tu endpoint existente)
+  // fetch('/api/update-balance', { method: 'POST', ... }) → aquí iría tu lógica real
 }
 
-// ====================== FREE SPINS ======================
-async function triggerFreeSpinsMode() {
-  const overlay = createOverlay(`¡${freeSpinsLeft} FREE SPINS!`);
-  while (freeSpinsLeft > 0) {
-    freeSpinsLeft--;
-    document.getElementById('freeSpinsCounter').textContent = freeSpinsLeft;
-    await spin(); // spin sin costo
-    await new Promise(r => setTimeout(r, 1200));
-  }
-  overlay.remove();
+// Inicialización
+function initSlots() {
+  console.log('%c🎰 Asian Dragon Slots cargados correctamente', 'color:#facc15; font-size:18px');
+  createOrUpdateGrid(); // muestra símbolos al cargar
 }
 
-// ====================== BONUS ROUND ======================
-async function startBonusRound() {
-  const overlay = createOverlay('BONUS ROUND - Elige 3 cofres');
-  const container = document.createElement('div');
-  container.style.display = 'flex';
-  container.style.gap = '30px';
-
-  for (let i = 0; i < 3; i++) {
-    const chest = document.createElement('button');
-    chest.textContent = '🪙';
-    chest.style.fontSize = '80px';
-    chest.onclick = () => {
-      const prize = Math.random() > 0.5 ? 25 : 50; // o free spins
-      chest.textContent = prize >= 40 ? '💎' : '🪙';
-      currentMultiplier += prize / 10;
-      setTimeout(() => chest.style.opacity = '0.3', 600);
-    };
-    container.appendChild(chest);
-  }
-  overlay.appendChild(container);
-  // Auto close después de 12 segundos
-  setTimeout(() => overlay.remove(), 12000);
-}
-
-// ====================== HELPERS ======================
-function createOverlay(title) {
-  const overlay = document.createElement('div');
-  overlay.className = 'overlay';
-  overlay.style.display = 'flex';
-  overlay.innerHTML = `<h1 style="font-size:3rem">${title}</h1>`;
-  document.body.appendChild(overlay);
-  return overlay;
-}
-
-function showWinMessage(amount) {
-  // puedes usar tu sistema de notificaciones existente
-  console.log(`%c¡GANASTE ${amount} fichas!`, 'color:gold;font-size:2rem');
-}
-
-// ====================== INICIALIZACIÓN ======================
-async function initSlots() {
-  const data = await api('/api/game-info'); // TU ENDPOINT EXISTENTE
-  SETTINGS = data;
-  // cargar reels en HTML (mantén tu código de creación de reels)
-  console.log('🎰 Slots enhanced cargados');
-}
-
-window.spin = spin; // para onclick
+// Exponer funciones al HTML
+window.spin = spin;
 window.initSlots = initSlots;
