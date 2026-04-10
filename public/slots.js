@@ -1,5 +1,6 @@
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
+
   const res = await fetch(path, {
     headers: {
       "Content-Type": "application/json",
@@ -32,7 +33,6 @@ const SYMBOL_LABELS = {
   scatter: "BONUS"
 };
 
-// 🔥 ARREGLADO (antes estaba mal la ruta)
 const SYMBOL_PATH = "/assets/symbols/asian";
 
 let playing = false;
@@ -42,8 +42,20 @@ let freeSpins = 0;
 let freeBank = 0;
 let jackpotBank = 1000;
 
-// 🟢 NUEVO → mantener apuesta
 let currentBet = 10;
+
+// 🎁 CONTROL FREESPINS
+function controlFreeSpins(serverFreeSpins) {
+  // 🔒 máximo 20
+  if (serverFreeSpins > 20) return 20;
+
+  // ❌ si ya tenía, no permitir que suba
+  if (freeSpins > 0 && serverFreeSpins > freeSpins) {
+    return freeSpins;
+  }
+
+  return serverFreeSpins;
+}
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -53,15 +65,16 @@ function symbolLabel(symbol) {
   return SYMBOL_LABELS[symbol] || symbol.toUpperCase();
 }
 
-// 🟢 fallback si no carga imagen
 function fallbackSvg(symbol) {
   const label = symbolLabel(symbol);
+
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
       <rect width="200" height="200" rx="28" fill="#111"/>
       <text x="100" y="110" text-anchor="middle" fill="#f3d77a" font-size="28">${label}</text>
     </svg>
   `;
+
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
@@ -101,22 +114,15 @@ function resetReels() {
   });
 }
 
-function highlightCells(ids, className) {
-  ids.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add(className);
-  });
-}
-
 function showBalance() {
   setText("saldo", saldoActual);
   setText("freeLine", freeSpins);
   setText("bankLine", freeBank);
   setText("jackpotLine", jackpotBank);
-  setText("betDisplay", currentBet); // 🔥 muestra apuesta
+  setText("betDisplay", currentBet);
 }
 
-// 🎰 animación
+// 🎰 ANIMACIÓN
 function startSpinFX() {
   stopSpinFX();
 
@@ -170,19 +176,20 @@ async function loadSession() {
   showBalance();
 }
 
-function setMessage(text, type = "") {
+function setMessage(text) {
   const el = document.getElementById("resultado");
   if (!el) return;
   el.textContent = text;
 }
 
-// 🟢 BOTONES DE APUESTA
+// 🎮 APUESTA
 function changeBet(amount) {
   currentBet += amount;
   if (currentBet < 1) currentBet = 1;
   showBalance();
 }
 
+// 🎰 SPIN
 async function jugar() {
   if (playing) return;
 
@@ -207,7 +214,7 @@ async function jugar() {
     const [res] = await Promise.all([
       api("/api/slots/spin", {
         method: "POST",
-        body: JSON.stringify({ amount: currentBet }) // 🔥 usa apuesta fija
+        body: JSON.stringify({ amount: currentBet })
       }),
       wait(1200)
     ]);
@@ -216,7 +223,10 @@ async function jugar() {
     renderBoard(res.board);
 
     saldoActual = Number(res.balance || saldoActual);
-    freeSpins = Number(res.freeSpins || 0);
+
+    // 🔥 CONTROL ACÁ
+    freeSpins = controlFreeSpins(Number(res.freeSpins || 0));
+
     freeBank = Number(res.freeSpinBank || 0);
     jackpotBank = Number(res.jackpotBank || jackpotBank);
 
@@ -237,7 +247,7 @@ async function jugar() {
   }
 }
 
-// 🔥 INIT
+// 🚀 INIT
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadSession();
