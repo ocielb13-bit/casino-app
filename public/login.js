@@ -18,7 +18,7 @@ async function login() {
 
     const data = await res.json();
 
-    if (!data.success) {
+    if (!res.ok || !data.success) {
       errorText.innerText = data.error || "Error";
       return;
     }
@@ -30,8 +30,9 @@ async function login() {
     if (data.role === "admin") {
       window.location.href = "/admin.html";
     } else {
-      window.location.href = "/casino.html";
+      window.location.href = "/menu.html"; // ✅ FIX
     }
+
   } catch {
     errorText.innerText = "Error de conexión con el servidor";
   }
