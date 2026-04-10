@@ -1,193 +1,120 @@
 :root {
-  color-scheme: dark;
-  --bg: #060812;
-  --bg2: #0b1020;
-  --card: rgba(14, 19, 31, 0.82);
-  --card-strong: rgba(10, 14, 24, 0.94);
-  --line: rgba(255, 255, 255, 0.09);
+  --bg: #05060b;
+  --neon: #00f0ff;
+  --pink: #ff2bd6;
   --gold: #f3d77a;
-  --gold-strong: #d7a92a;
-  --cyan: #65d9ff;
-  --green: #66ffb3;
-  --red: #ff7b7b;
-  --muted: #a5afc0;
+  --green: #00ff9f;
+  --red: #ff4d4d;
 }
 
-* { box-sizing: border-box; }
-
 body {
-  margin: 0;
-  font-family: Inter, sans-serif;
-  color: #fff;
-  background:
-    radial-gradient(circle at top, rgba(101, 217, 255, 0.16), transparent 30%),
-    radial-gradient(circle at 20% 20%, rgba(243, 215, 122, 0.10), transparent 22%),
-    linear-gradient(180deg, #05060b, #09101d);
+  margin:0;
+  font-family: sans-serif;
+  color:#fff;
+  background: radial-gradient(circle at top, #0b1020, #05060b);
 }
 
 .page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
 }
 
 .card, .slot-shell {
-  width: 100%;
-  max-width: 1100px;
-  border-radius: 24px;
-  padding: 20px;
-  background: rgba(10, 14, 24, 0.95);
-  border: 1px solid var(--line);
-  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  background: rgba(10,10,20,.9);
+  border:1px solid rgba(0,255,255,.2);
+  border-radius:20px;
+  padding:20px;
+  box-shadow:0 0 40px rgba(0,255,255,.1);
 }
 
-.user-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.kpi {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 15px 0;
-}
-
+.kpi { display:flex; gap:10px; flex-wrap:wrap; }
 .pill {
-  padding: 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid var(--line);
+  background:#111;
+  padding:10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.1);
 }
 
-.grid {
-  margin: 20px 0;
-}
-
-.row.reels {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
+/* 🎰 REELS */
 .reel {
-  width: 90px;
-  height: 90px;
-  border-radius: 16px;
-  background: #111;
-  display: grid;
-  place-items: center;
-  position: relative;
-  transition: .2s;
+  width:90px;
+  height:90px;
+  border-radius:14px;
+  background:#000;
+  display:grid;
+  place-items:center;
+  position:relative;
+  overflow:hidden;
 }
 
-.reel:hover {
-  box-shadow: 0 0 15px rgba(243,215,122,.3);
+.reel::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:14px;
+  box-shadow:0 0 10px var(--neon);
+  opacity:.2;
 }
 
 .reel.spinning {
-  animation: spinPulse .15s infinite alternate;
+  animation:spin .1s infinite alternate;
 }
 
-@keyframes spinPulse {
-  from { transform: scale(1); }
-  to { transform: scale(1.05); }
+@keyframes spin {
+  from { transform:scale(1); }
+  to { transform:scale(1.05); }
 }
 
 .reel img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width:100%;
+  height:100%;
+  object-fit:contain;
 }
 
-/* 🎰 CONTROLES */
-.controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.bet-controls {
-  display: flex;
-  gap: 10px;
-}
-
-.bet-controls button {
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: #1a2233;
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  cursor: pointer;
-}
-
-.bet-controls button:hover {
-  background: #2a3350;
-}
-
-/* 🎰 BOTÓN SPIN */
+/* 🎰 BOTÓN */
 .spin-btn {
-  width: 200px;
-  padding: 14px;
-  font-size: 18px;
-  font-weight: bold;
-  border-radius: 16px;
-  background: linear-gradient(#ffe38f, #d9a826);
-  color: #1c1500;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(243,215,122,.3);
+  background: linear-gradient(45deg, var(--neon), var(--pink));
+  border:none;
+  padding:14px;
+  border-radius:14px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 0 20px var(--neon);
 }
 
 .spin-btn:hover {
-  transform: scale(1.05);
+  transform:scale(1.05);
 }
 
-/* 💎 RESULTADOS */
-#resultado {
-  text-align: center;
-  font-weight: bold;
-  margin-top: 10px;
+/* 💰 MONEDAS */
+.coin {
+  position:fixed;
+  font-size:20px;
+  animation:coinFall 1s linear forwards;
 }
 
+@keyframes coinFall {
+  from { transform:translateY(-50px); opacity:1; }
+  to { transform:translateY(200px); opacity:0; }
+}
+
+/* 🎉 WIN */
 #resultado.win {
-  color: var(--green);
+  color:var(--green);
+  text-shadow:0 0 10px var(--green);
 }
 
 #resultado.lose {
-  color: var(--red);
+  color:var(--red);
 }
 
-/* 🎉 EFECTOS */
-.win-mid {
-  box-shadow: 0 0 15px rgba(101,217,255,.4);
+/* 🎁 BONUS */
+.bonus {
+  animation:bonusGlow 1s infinite alternate;
 }
 
-.win-high {
-  box-shadow: 0 0 20px rgba(243,215,122,.6);
-}
-
-.win-jackpot {
-  animation: jackpot .4s infinite alternate;
-}
-
-@keyframes jackpot {
-  from { box-shadow: 0 0 10px red; }
-  to { box-shadow: 0 0 25px gold; }
-}
-
-/* 🎡 RULETA */
-.wheel-box {
-  transition: transform 3s ease;
-}
-
-.pointer {
-  animation: glow 1s infinite alternate;
-}
-
-@keyframes glow {
-  from { filter: drop-shadow(0 0 4px gold); }
-  to { filter: drop-shadow(0 0 10px gold); }
+@keyframes bonusGlow {
+  from { box-shadow:0 0 10px var(--pink); }
+  to { box-shadow:0 0 30px var(--pink); }
 }
