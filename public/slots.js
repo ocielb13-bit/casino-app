@@ -1,259 +1,85 @@
-async function api(path, options = {}) {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: "Bearer " + token } : {}),
-      ...(options.headers || {})
-    },
-    ...options
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Error");
-  return data;
-}
-
-const ROW_IDS = [
-  ["c1_0", "c1_1", "c1_2", "c1_3", "c1_4"],
-  ["c2_0", "c2_1", "c2_2", "c2_3", "c2_4"],
-  ["c3_0", "c3_1", "c3_2", "c3_3", "c3_4"]
-];
-
-const SYMBOLS = ["dragon", "goldpot", "coin", "jade", "lantern", "wild", "scatter"];
-
-const SYMBOL_LABELS = {
-  dragon: "DRAGON",
-  goldpot: "POT",
-  coin: "COIN",
-  jade: "JADE",
-  lantern: "LANTERN",
-  wild: "WILD",
-  scatter: "BONUS"
-};
-
-const SYMBOL_PATH = "/assets/symbols/asian";
-
-let playing = false;
-let spinTimer = null;
-let saldoActual = 0;
 let freeSpins = 0;
-let freeBank = 0;
-let jackpotBank = 1000;
-
 let currentBet = 10;
 
-// 🎁 CONTROL FREESPINS
+// 🎁 CONTROL FREESPINS REAL
 function controlFreeSpins(serverFreeSpins) {
-  // 🔒 máximo 20
   if (serverFreeSpins > 20) return 20;
-
-  // ❌ si ya tenía, no permitir que suba
-  if (freeSpins > 0 && serverFreeSpins > freeSpins) {
-    return freeSpins;
-  }
-
+  if (freeSpins > 0 && serverFreeSpins > freeSpins) return freeSpins;
   return serverFreeSpins;
 }
 
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// 💰 MONEDAS VISUALES
+function spawnCoins(amount) {
+  for (let i = 0; i < Math.min(amount, 20); i++) {
+    const coin = document.createElement("div");
+    coin.className = "coin";
+    coin.textContent = "💰";
+    coin.style.left = Math.random() * 100 + "%";
+    document.body.appendChild(coin);
 
-function symbolLabel(symbol) {
-  return SYMBOL_LABELS[symbol] || symbol.toUpperCase();
-}
-
-function fallbackSvg(symbol) {
-  const label = symbolLabel(symbol);
-
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-      <rect width="200" height="200" rx="28" fill="#111"/>
-      <text x="100" y="110" text-anchor="middle" fill="#f3d77a" font-size="28">${label}</text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
-function randomSymbol() {
-  return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-}
-
-function setText(id, txt) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = txt;
-}
-
-function setCell(id, symbol) {
-  const img = document.getElementById("img-" + id);
-  if (!img) return;
-
-  img.alt = symbolLabel(symbol);
-
-  img.onerror = () => {
-    img.src = fallbackSvg(symbol);
-  };
-
-  img.src = `${SYMBOL_PATH}/${symbol}.png`;
-}
-
-function renderBoard(board) {
-  board.forEach((row, rIndex) => {
-    row.forEach((symbol, cIndex) => {
-      setCell(`c${rIndex + 1}_${cIndex}`, symbol);
-    });
-  });
-}
-
-function resetReels() {
-  document.querySelectorAll(".reel").forEach((el) => {
-    el.className = "reel";
-  });
-}
-
-function showBalance() {
-  setText("saldo", saldoActual);
-  setText("freeLine", freeSpins);
-  setText("bankLine", freeBank);
-  setText("jackpotLine", jackpotBank);
-  setText("betDisplay", currentBet);
-}
-
-// 🎰 ANIMACIÓN
-function startSpinFX() {
-  stopSpinFX();
-
-  document.querySelectorAll(".reel").forEach((reel) => {
-    reel.classList.add("spinning");
-  });
-
-  spinTimer = setInterval(() => {
-    document.querySelectorAll(".reel img").forEach((img) => {
-      img.src = fallbackSvg(randomSymbol());
-    });
-  }, 60);
-}
-
-function stopSpinFX() {
-  if (spinTimer) {
-    clearInterval(spinTimer);
-    spinTimer = null;
+    setTimeout(() => coin.remove(), 1000);
   }
-
-  document.querySelectorAll(".reel").forEach((reel) => {
-    reel.classList.remove("spinning");
-  });
 }
 
-function initialBoard() {
-  return [
-    ["dragon", "coin", "jade", "lantern", "wild"],
-    ["coin", "jade", "dragon", "goldpot", "scatter"],
-    ["dragon", "dragon", "coin", "jade", "lantern"]
-  ];
-}
-
-async function loadSession() {
-  const me = await api("/api/me");
-
-  if (me.role === "admin") {
-    window.location.href = "/admin.html";
-    return;
-  }
-
-  saldoActual = Number(me.balance || 0);
-  freeSpins = Number(me.free_spins || 0);
-  freeBank = Number(me.free_spin_bank || 0);
-
-  const info = await api("/api/game-info");
-  jackpotBank = Number(info.jackpot_bank || 1000);
-
-  document.getElementById("playerLine").textContent = me.username;
-
-  showBalance();
-}
-
-function setMessage(text) {
+// 🎁 BONUS GAME SIMPLE
+function triggerBonus() {
   const el = document.getElementById("resultado");
-  if (!el) return;
-  el.textContent = text;
+  el.textContent = "🎁 BONUS ACTIVADO!";
+  el.className = "bonus";
+
+  let bonusWin = Math.floor(Math.random() * 200) + 50;
+
+  setTimeout(() => {
+    el.textContent = `🎉 Bonus ganó ${bonusWin}`;
+    spawnCoins(15);
+  }, 1500);
 }
 
-// 🎮 APUESTA
-function changeBet(amount) {
-  currentBet += amount;
-  if (currentBet < 1) currentBet = 1;
-  showBalance();
+// 🎰 MULTIPLICADOR
+function applyMultiplier(win) {
+  let chance = Math.random();
+
+  if (chance < 0.1) return win * 2;
+  if (chance < 0.03) return win * 5;
+
+  return win;
 }
 
 // 🎰 SPIN
 async function jugar() {
-  if (playing) return;
-
-  const btn = document.getElementById("spinBtn");
-
-  if (currentBet <= 0) {
-    setMessage("Apuesta inválida");
-    return;
-  }
-
-  playing = true;
-  btn.disabled = true;
-
-  resetReels();
-  setMessage("Girando...");
-  setText("detallePago", "");
-  setText("bonusHint", "");
+  const resultado = document.getElementById("resultado");
 
   try {
-    startSpinFX();
+    resultado.textContent = "Girando...";
 
-    const [res] = await Promise.all([
-      api("/api/slots/spin", {
-        method: "POST",
-        body: JSON.stringify({ amount: currentBet })
-      }),
-      wait(1200)
-    ]);
+    const res = await fetch("/api/slots/spin", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ amount: currentBet })
+    }).then(r => r.json());
 
-    stopSpinFX();
-    renderBoard(res.board);
+    freeSpins = controlFreeSpins(res.freeSpins || 0);
 
-    saldoActual = Number(res.balance || saldoActual);
+    let win = res.win || 0;
 
-    // 🔥 CONTROL ACÁ
-    freeSpins = controlFreeSpins(Number(res.freeSpins || 0));
+    // 🎰 MULTIPLICADOR
+    win = applyMultiplier(win);
 
-    freeBank = Number(res.freeSpinBank || 0);
-    jackpotBank = Number(res.jackpotBank || jackpotBank);
+    if (res.scatterCount >= 3) {
+      triggerBonus();
+      return;
+    }
 
-    showBalance();
-
-    if (res.win > 0) {
-      setMessage(`🎉 Ganaste ${res.win}`);
+    if (win > 0) {
+      resultado.textContent = `🎉 Ganaste ${win}`;
+      resultado.className = "win";
+      spawnCoins(win);
     } else {
-      setMessage("😢 Sin premio");
+      resultado.textContent = "😢 Sin premio";
+      resultado.className = "lose";
     }
 
   } catch (err) {
-    stopSpinFX();
-    setMessage("❌ " + err.message);
-  } finally {
-    btn.disabled = false;
-    playing = false;
+    resultado.textContent = "Error";
   }
 }
-
-// 🚀 INIT
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await loadSession();
-    renderBoard(initialBoard());
-  } catch {
-    localStorage.removeItem("token");
-    window.location.href = "/";
-  }
-});
