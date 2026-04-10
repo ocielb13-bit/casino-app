@@ -2,64 +2,82 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Casino Menu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casino</title>
   <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
   <div class="page">
-    <div class="card">
-      <h1>🎰 Casino</h1>
-      <p id="user"></p>
 
+    <div class="card">
+
+      <!-- HEADER -->
+      <div class="user-top">
+        <div>
+          <h1>🎰 Casino</h1>
+          <p class="muted" id="playerLine">Cargando...</p>
+        </div>
+        <button class="secondary" onclick="logout()">Cerrar sesión</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi">
+        <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
+        <div class="pill">🎮 Juegos: <strong>2</strong></div>
+      </div>
+
+      <!-- JUEGOS -->
       <div class="game-grid">
+
         <a href="/slots.html" class="game-card">
           <div class="game-icon">🐉</div>
           <div class="game-name">Slots</div>
+          <div class="game-desc">Girá y ganá premios épicos</div>
         </a>
 
         <a href="/ruleta.html" class="game-card">
           <div class="game-icon">🎡</div>
           <div class="game-name">Ruleta</div>
+          <div class="game-desc">Elegí tu número y probá suerte</div>
         </a>
+
       </div>
 
-      <button onclick="logout()">Cerrar sesión</button>
     </div>
+
   </div>
 
-  <script>
-    async function loadUser() {
-      const token = localStorage.getItem("token");
+<script>
+async function api(path) {
+  const token = localStorage.getItem("token");
 
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
+  const res = await fetch(path, {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-      try {
-        const res = await fetch("/api/me", {
-          headers: { Authorization: "Bearer " + token }
-        });
+  if (!res.ok) {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+    return;
+  }
 
-        const data = await res.json();
+  return res.json();
+}
 
-        if (!res.ok) throw new Error();
+async function loadMe() {
+  const me = await api("/api/me");
+  document.getElementById("playerLine").textContent = "Jugador: " + me.username;
+  document.getElementById("saldo").textContent = me.balance;
+}
 
-        document.getElementById("user").textContent =
-          "Jugador: " + data.username + " | Saldo: " + data.balance;
+function logout() {
+  localStorage.removeItem("token");
+  window.location.href = "/";
+}
 
-      } catch {
-        localStorage.removeItem("token");
-        window.location.href = "/";
-      }
-    }
+loadMe();
+</script>
 
-    function logout() {
-      localStorage.removeItem("token");
-      window.location.href = "/";
-    }
-
-    loadUser();
-  </script>
 </body>
 </html>
