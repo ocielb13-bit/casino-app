@@ -21,6 +21,7 @@ const ROW_IDS = [
 ];
 
 const SYMBOLS = ["dragon", "goldpot", "coin", "jade", "lantern", "wild", "scatter"];
+
 const SYMBOL_LABELS = {
   dragon: "DRAGON",
   goldpot: "POT",
@@ -31,7 +32,8 @@ const SYMBOL_LABELS = {
   scatter: "BONUS"
 };
 
-const SYMBOL_PATH = "/asset/symbol/asian";
+// 🔥 ARREGLADO (antes estaba mal la ruta)
+const SYMBOL_PATH = "public/assets/symbols/asian";
 
 let playing = false;
 let spinTimer = null;
@@ -39,6 +41,9 @@ let saldoActual = 0;
 let freeSpins = 0;
 let freeBank = 0;
 let jackpotBank = 1000;
+
+// 🟢 NUEVO → mantener apuesta
+let currentBet = 10;
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -48,20 +53,13 @@ function symbolLabel(symbol) {
   return SYMBOL_LABELS[symbol] || symbol.toUpperCase();
 }
 
+// 🟢 fallback si no carga imagen
 function fallbackSvg(symbol) {
   const label = symbolLabel(symbol);
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-      <defs>
-        <radialGradient id="g" cx="30%" cy="20%" r="90%">
-          <stop offset="0%" stop-color="#2d3a59"/>
-          <stop offset="55%" stop-color="#111827"/>
-          <stop offset="100%" stop-color="#070a12"/>
-        </radialGradient>
-      </defs>
-      <rect width="200" height="200" rx="28" fill="url(#g)"/>
-      <circle cx="100" cy="100" r="74" fill="none" stroke="#f3d77a" stroke-opacity="0.35" stroke-width="4"/>
-      <text x="100" y="109" text-anchor="middle" fill="#f3d77a" font-size="28" font-family="Arial, sans-serif" font-weight="700">${label}</text>
+      <rect width="200" height="200" rx="28" fill="#111"/>
+      <text x="100" y="110" text-anchor="middle" fill="#f3d77a" font-size="28">${label}</text>
     </svg>
   `;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
@@ -81,12 +79,11 @@ function setCell(id, symbol) {
   if (!img) return;
 
   img.alt = symbolLabel(symbol);
-  delete img.dataset.fallbackApplied;
+
   img.onerror = () => {
-    if (img.dataset.fallbackApplied) return;
-    img.dataset.fallbackApplied = "1";
     img.src = fallbackSvg(symbol);
   };
+
   img.src = `${SYMBOL_PATH}/${symbol}.png`;
 }
 
@@ -116,21 +113,22 @@ function showBalance() {
   setText("freeLine", freeSpins);
   setText("bankLine", freeBank);
   setText("jackpotLine", jackpotBank);
+  setText("betDisplay", currentBet); // 🔥 muestra apuesta
 }
 
+// 🎰 animación
 function startSpinFX() {
   stopSpinFX();
+
   document.querySelectorAll(".reel").forEach((reel) => {
     reel.classList.add("spinning");
   });
 
   spinTimer = setInterval(() => {
     document.querySelectorAll(".reel img").forEach((img) => {
-      const symbol = randomSymbol();
-      img.alt = symbolLabel(symbol);
-      img.src = fallbackSvg(symbol);
+      img.src = fallbackSvg(randomSymbol());
     });
-  }, 70);
+  }, 60);
 }
 
 function stopSpinFX() {
@@ -138,6 +136,7 @@ function stopSpinFX() {
     clearInterval(spinTimer);
     spinTimer = null;
   }
+
   document.querySelectorAll(".reel").forEach((reel) => {
     reel.classList.remove("spinning");
   });
@@ -167,7 +166,7 @@ async function loadSession() {
   jackpotBank = Number(info.jackpot_bank || 1000);
 
   document.getElementById("playerLine").textContent = me.username;
-  setText("rtpLine", 96);
+
   showBalance();
 }
 
@@ -175,25 +174,30 @@ function setMessage(text, type = "") {
   const el = document.getElementById("resultado");
   if (!el) return;
   el.textContent = text;
-  el.dataset.type = type;
+}
+
+// 🟢 BOTONES DE APUESTA
+function changeBet(amount) {
+  currentBet += amount;
+  if (currentBet < 1) currentBet = 1;
+  showBalance();
 }
 
 async function jugar() {
   if (playing) return;
 
   const btn = document.getElementById("spinBtn");
-  const input = document.getElementById("apuesta");
-  const apuesta = parseInt(input.value, 10);
 
-  if (!Number.isInteger(apuesta) || apuesta <= 0) {
-    setMessage("Apuesta inválida", "error");
+  if (currentBet <= 0) {
+    setMessage("Apuesta inválida");
     return;
   }
 
   playing = true;
   btn.disabled = true;
+
   resetReels();
-  setMessage("Girando...", "loading");
+  setMessage("Girando...");
   setText("detallePago", "");
   setText("bonusHint", "");
 
@@ -203,9 +207,9 @@ async function jugar() {
     const [res] = await Promise.all([
       api("/api/slots/spin", {
         method: "POST",
-        body: JSON.stringify({ amount: apuesta })
+        body: JSON.stringify({ amount: currentBet }) // 🔥 usa apuesta fija
       }),
-      wait(1100)
+      wait(1200)
     ]);
 
     stopSpinFX();
@@ -218,60 +222,28 @@ async function jugar() {
 
     showBalance();
 
-    if (Array.isArray(res.paylines) && res.paylines.length > 0) {
-      res.paylines.forEach((line) => {
-        highlightCells(line.ids, line.tier || "win-mid");
-      });
-      setText(
-        "detallePago",
-        res.paylines.map((p) => `${p.label} +${p.amount}`).join(" • ")
-      );
-    } else {
-      setText("detallePago", "Sin línea ganadora");
-    }
-
-    if (res.scatterCount === 2) {
-      setText("bonusHint", "✨ Hay 2 scatters. Falta 1 para free spins.");
-      highlightCells(res.scatterCells, "scatter-hint");
-    } else if (res.freeSpinsAwarded > 0) {
-      setText("bonusHint", `🌀 Free spins activados (+${res.freeSpinsAwarded}).`);
-      highlightCells(res.scatterCells, "free-hint");
-    }
-
     if (res.win > 0) {
-      setMessage(`🎉 Ganaste ${res.win}`, "win");
+      setMessage(`🎉 Ganaste ${res.win}`);
     } else {
-      setMessage("😢 Sin premio", "lose");
+      setMessage("😢 Sin premio");
     }
 
-    input.value = "";
   } catch (err) {
     stopSpinFX();
-    setMessage("❌ " + err.message, "error");
+    setMessage("❌ " + err.message);
   } finally {
     btn.disabled = false;
     playing = false;
   }
 }
 
+// 🔥 INIT
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const input = document.getElementById("apuesta");
-    if (input) input.value = "";
-
     await loadSession();
     renderBoard(initialBoard());
-
-    input?.addEventListener("input", () => {
-      input.value = input.value.replace(/[^\d]/g, "");
-    });
   } catch {
     localStorage.removeItem("token");
     window.location.href = "/";
   }
-});
-
-window.addEventListener("pageshow", () => {
-  const input = document.getElementById("apuesta");
-  if (input) input.value = "";
 });
