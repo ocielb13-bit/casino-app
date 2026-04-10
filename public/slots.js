@@ -33,7 +33,7 @@ const SYMBOL_LABELS = {
 };
 
 // 🔥 ARREGLADO (antes estaba mal la ruta)
-const SYMBOL_PATH = "public/assets/symbols/asian";
+const SYMBOL_PATH = "/assets/symbols/asian";
 
 let playing = false;
 let spinTimer = null;
