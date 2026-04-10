@@ -1,5 +1,6 @@
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
+
   const res = await fetch(path, {
     headers: {
       "Content-Type": "application/json",
@@ -14,6 +15,7 @@ async function api(path, options = {}) {
   return data;
 }
 
+// 📜 HISTORIAL
 let history = [];
 
 function saveHistory() {
@@ -35,6 +37,7 @@ function renderHistory() {
   if (!box) return;
 
   box.innerHTML = "";
+
   history.slice(0, 5).forEach((item) => {
     const el = document.createElement("div");
     el.className = `history-item ${item.win > 0 ? "win" : "lose"}`;
@@ -50,9 +53,11 @@ function addHistory(result, win) {
   renderHistory();
 }
 
+// 👤 USUARIO
 async function loadMe() {
   try {
     const me = await api("/api/me");
+
     if (me.role === "admin") {
       window.location.href = "/admin.html";
       return;
@@ -60,37 +65,56 @@ async function loadMe() {
 
     document.getElementById("playerLine").textContent = `Usuario: ${me.username}`;
     document.getElementById("saldo").textContent = me.balance;
+
   } catch {
     localStorage.removeItem("token");
     window.location.href = "/";
   }
 }
 
+// 🎡 ANIMACIÓN PRO
 function animateWheel(finalNumber) {
   return new Promise((resolve) => {
     const wheel = document.getElementById("wheel");
-    wheel.classList.add("spinning");
 
-    let count = 0;
-    const timer = setInterval(() => {
-      wheel.textContent = Math.floor(Math.random() * 37);
-      count += 1;
+    let duration = 2000;
+    let start = null;
 
-      if (count >= 18) {
-        clearInterval(timer);
-        wheel.classList.remove("spinning");
+    function spin(timestamp) {
+      if (!start) start = timestamp;
+      let progress = timestamp - start;
+
+      let speed = Math.max(0.1, 1 - progress / duration);
+      let random = Math.floor(Math.random() * 37);
+
+      wheel.textContent = random;
+      wheel.style.transform = `rotate(${progress * 0.3}deg)`;
+
+      if (progress < duration) {
+        requestAnimationFrame(spin);
+      } else {
         wheel.textContent = finalNumber;
+        wheel.style.transform = "rotate(0deg)";
         resolve();
       }
-    }, 55);
+    }
+
+    wheel.classList.add("spinning");
+    requestAnimationFrame(spin);
+
+    setTimeout(() => {
+      wheel.classList.remove("spinning");
+    }, duration);
   });
 }
 
+// 🎯 JUGAR
 async function jugar() {
+  const resultado = document.getElementById("resultado");
+
   try {
     const numero = parseInt(document.getElementById("numero").value, 10);
     const apuesta = parseInt(document.getElementById("apuesta").value, 10);
-    const resultado = document.getElementById("resultado");
 
     if (!Number.isInteger(numero) || numero < 0 || numero > 36) {
       resultado.textContent = "Elegí un número entre 0 y 36.";
@@ -102,11 +126,14 @@ async function jugar() {
       return;
     }
 
-    resultado.textContent = "Girando...";
+    resultado.textContent = "🎡 Girando...";
 
     const data = await api("/api/roulette/spin", {
       method: "POST",
-      body: JSON.stringify({ number: numero, amount: apuesta })
+      body: JSON.stringify({
+        number: numero,
+        amount: apuesta
+      })
     });
 
     await animateWheel(data.result);
@@ -114,17 +141,21 @@ async function jugar() {
     document.getElementById("saldo").textContent = data.balance;
 
     if (data.win > 0) {
-      resultado.textContent = `🎉 Salió ${data.result}. Ganaste ${data.win}.`;
+      resultado.textContent = `🎉 Salió ${data.result}. Ganaste ${data.win}`;
+      resultado.className = "win";
     } else {
-      resultado.textContent = `😢 Salió ${data.result}. Perdiste.`;
+      resultado.textContent = `😢 Salió ${data.result}. Perdiste`;
+      resultado.className = "lose";
     }
 
     addHistory(data.result, data.win);
+
   } catch (err) {
-    document.getElementById("resultado").textContent = "❌ " + err.message;
+    resultado.textContent = "❌ " + err.message;
   }
 }
 
+// 🚀 INIT
 document.addEventListener("DOMContentLoaded", async () => {
   loadHistory();
   await loadMe();
