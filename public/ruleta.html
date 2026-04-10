@@ -6,52 +6,68 @@
   <title>Ruleta Pro</title>
   <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
   <div class="page">
-    <div class="card" style="width:min(100%, 1100px);">
-      <div class="user-top" style="margin-bottom: 8px;">
+
+    <div class="card" style="max-width: 1100px;">
+      
+      <!-- 📌 HEADER JUGADOR -->
+      <div class="user-top" style="margin-bottom: 10px;">
         <div>
           <h1>🎡 Ruleta Pro</h1>
           <p class="muted" id="playerLine">Cargando...</p>
         </div>
-        <button type="button" class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+        <button class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
       </div>
 
+      <!-- 📌 DATOS -->
       <div class="kpi">
         <div class="pill">Saldo: <strong id="saldo">0</strong></div>
         <div class="pill">Pago: <strong>35:1</strong></div>
         <div class="pill">Mesa: <strong>Premium</strong></div>
       </div>
 
+      <!-- 🎡 RUEDA + APUESTAS -->
       <div class="roulette-stage">
+        
+        <!-- 🎡 RUEDA -->
         <div class="wheel-wrap">
           <div class="wheel-frame">
             <div class="pointer"></div>
             <div id="wheel" class="wheel-box">0</div>
           </div>
-          <div class="muted">Elegí un número del 0 al 36 y girá la rueda.</div>
+          <p class="muted" style="margin-top:8px;">Elegí un número del 0 al 36 y girá la rueda.</p>
         </div>
 
-        <div class="slot-shell">
+        <!-- 🎰 PANEL DE APUESTA -->
+        <div class="slot-shell" style="padding:20px; border-radius:24px;">
+          
+          <h2 style="margin-bottom:14px;">🎯 Tus Apuestas</h2>
+
           <div class="row">
-            <input id="numero" type="number" min="0" max="36" inputmode="numeric" autocomplete="off" placeholder="Número (0-36)">
-            <input id="apuesta" type="number" min="1" inputmode="numeric" autocomplete="off" placeholder="Apuesta">
+            <input id="numero" type="number" min="0" max="36" placeholder="Número (0-36)">
+            <input id="apuesta" type="number" min="1" placeholder="Apuesta">
           </div>
 
           <div class="row">
-            <button type="button" onclick="jugar()">Girar</button>
-            <button type="button" class="secondary" onclick="document.getElementById('numero').value=''; document.getElementById('apuesta').value=''">Limpiar</button>
+            <button onclick="jugar()">🎡 Girar</button>
+            <button class="secondary" onclick="numero.value=''; apuesta.value=''">Limpiar</button>
           </div>
 
           <p id="resultado"></p>
 
+          <!-- 📜 HISTORIAL -->
           <div class="history-box">
             <div class="small">Últimos resultados</div>
             <div id="history" class="history-list"></div>
           </div>
+
         </div>
       </div>
+
     </div>
+
   </div>
 
   <script src="/ruleta.js"></script>
