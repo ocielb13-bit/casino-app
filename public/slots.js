@@ -28,11 +28,56 @@ let freeBank = 0;
 let jackpotBank = 1000;
 let currentBet = 10;
 
-// 🎁 CONTROL FREESPINS
+// 🎁 CONTROL FREESPINS (MAX 20 Y NO SUMA SI TENÉS ACTIVOS)
 function controlFreeSpins(serverFreeSpins) {
   if (serverFreeSpins > 20) return 20;
   if (freeSpins > 0 && serverFreeSpins > freeSpins) return freeSpins;
   return serverFreeSpins;
+}
+
+// 🎰 UI
+function updateUI() {
+  const saldoEl = document.getElementById("saldo");
+  const betEl = document.getElementById("betDisplay");
+  const freeEl = document.getElementById("freeLine");
+  const bankEl = document.getElementById("bankLine");
+  const jackpotEl = document.getElementById("jackpotLine");
+
+  if (saldoEl) saldoEl.textContent = saldoActual;
+  if (betEl) betEl.textContent = currentBet;
+  if (freeEl) freeEl.textContent = freeSpins;
+  if (bankEl) bankEl.textContent = freeBank;
+  if (jackpotEl) jackpotEl.textContent = jackpotBank;
+}
+
+// 🎰 CAMBIAR APUESTA (+ y -)
+function changeBet(amount) {
+  currentBet += amount;
+
+  if (currentBet < 1) currentBet = 1;
+
+  if (currentBet > saldoActual) {
+    currentBet = saldoActual;
+  }
+
+  updateUI();
+}
+
+// 🎰 CARGAR SESIÓN
+async function loadSession() {
+  const me = await api("/api/me");
+
+  saldoActual = Number(me.balance || 0);
+  freeSpins = Number(me.free_spins || 0);
+  freeBank = Number(me.free_spin_bank || 0);
+
+  const info = await api("/api/game-info");
+  jackpotBank = Number(info.jackpot_bank || 1000);
+
+  const playerEl = document.getElementById("playerLine");
+  if (playerEl) playerEl.textContent = me.username;
+
+  updateUI();
 }
 
 // 🎰 FALLBACK IMAGEN
@@ -64,7 +109,7 @@ function renderBoard(board) {
   });
 }
 
-// 🎰 RANDOM PARA SPIN VISUAL
+// 🎰 RANDOM VISUAL
 function randomSymbol() {
   return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
 }
@@ -130,6 +175,12 @@ async function jugar() {
   const btn = document.getElementById("spinBtn");
   const resultado = document.getElementById("resultado");
 
+  // 🚫 SALDO INSUFICIENTE
+  if (currentBet > saldoActual) {
+    resultado.textContent = "Saldo insuficiente";
+    return;
+  }
+
   playing = true;
   btn.disabled = true;
 
@@ -150,13 +201,18 @@ async function jugar() {
     stopSpinFX();
     renderBoard(res.board);
 
-    saldoActual = res.balance || saldoActual;
+    // ✅ ACTUALIZACIÓN COMPLETA
+    saldoActual = Number(res.balance || saldoActual);
     freeSpins = controlFreeSpins(res.freeSpins || 0);
+    freeBank = Number(res.freeSpinBank || freeBank);
+    jackpotBank = Number(res.jackpotBank || jackpotBank);
+
+    updateUI();
 
     let win = res.win || 0;
     win = applyMultiplier(win);
 
-    // 🎁 BONUS SI HAY SCATTERS
+    // 🎁 BONUS
     if (res.scatterCount >= 3) {
       triggerBonus();
     }
@@ -180,10 +236,18 @@ async function jugar() {
 }
 
 // 🎰 INIT
-document.addEventListener("DOMContentLoaded", () => {
-  renderBoard([
-    ["dragon","coin","jade","lantern","wild"],
-    ["coin","jade","dragon","goldpot","scatter"],
-    ["dragon","dragon","coin","jade","lantern"]
-  ]);
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await loadSession();
+
+    renderBoard([
+      ["dragon","coin","jade","lantern","wild"],
+      ["coin","jade","dragon","goldpot","scatter"],
+      ["dragon","dragon","coin","jade","lantern"]
+    ]);
+
+  } catch {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  }
 });
