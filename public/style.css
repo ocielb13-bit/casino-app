@@ -2,13 +2,86 @@
   --neon:#00f0ff;
   --pink:#ff2bd6;
   --bg:#05060b;
+  --panel:#0c0f1a;
 }
 
+/* BASE */
 body {
   margin:0;
   background: radial-gradient(circle,#0b1020,#05060b);
   color:white;
   font-family:sans-serif;
+}
+
+/* CONTENEDOR */
+.page {
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/* MAQUINA */
+.machine {
+  background:var(--panel);
+  padding:20px;
+  border-radius:20px;
+  box-shadow:0 0 40px rgba(0,255,255,.15);
+  border:1px solid rgba(0,255,255,.2);
+}
+
+.slot-shell {
+  width:100%;
+  max-width:520px;
+}
+
+/* HEADER */
+.top-bar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.title {
+  margin:0;
+  color:var(--neon);
+  text-shadow:0 0 10px var(--neon);
+}
+
+.muted {
+  opacity:.6;
+  font-size:12px;
+}
+
+.btn-back {
+  background:#111;
+  border:1px solid rgba(255,255,255,.1);
+  color:#fff;
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+/* STATS */
+.stats {
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  margin:15px 0;
+  gap:8px;
+}
+
+.stat {
+  background:#111;
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.08);
+  font-size:14px;
+}
+
+.stat.bet {
+  border:1px solid var(--neon);
+  box-shadow:0 0 10px rgba(0,255,255,.3);
 }
 
 /* 🎰 GRID REAL 5x3 */
@@ -29,7 +102,8 @@ body {
   display:grid;
   place-items:center;
   overflow:hidden;
-  box-shadow:0 0 10px rgba(0,255,255,.2);
+  box-shadow:0 0 12px rgba(0,255,255,.2);
+  border:1px solid rgba(0,255,255,.15);
 }
 
 .reel.spinning {
@@ -47,15 +121,67 @@ body {
   object-fit:contain;
 }
 
-/* 🎰 BOTÓN */
+/* CONTROLES */
+.controls {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:10px;
+}
+
+/* APUESTAS */
+.bet-controls button {
+  background:#111;
+  border:1px solid rgba(255,255,255,.1);
+  color:#fff;
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  margin-right:5px;
+  transition:.2s;
+}
+
+.bet-controls button:hover {
+  border-color:var(--neon);
+  box-shadow:0 0 10px var(--neon);
+}
+
+/* BOTÓN GIRAR */
 .spin-btn {
   background:linear-gradient(45deg,var(--neon),var(--pink));
   border:none;
-  padding:12px;
-  border-radius:10px;
+  padding:12px 20px;
+  border-radius:12px;
   cursor:pointer;
   color:#000;
   font-weight:bold;
+  box-shadow:0 0 20px var(--neon);
+  transition:.2s;
+}
+
+.spin-btn:hover {
+  transform:scale(1.05);
+}
+
+/* RESULTADOS */
+.results {
+  text-align:center;
+  margin-top:15px;
+  min-height:40px;
+}
+
+#resultado.win {
+  color:#00ff9f;
+  text-shadow:0 0 10px #00ff9f;
+}
+
+#resultado.lose {
+  color:#ff4d4d;
+}
+
+#resultado.bonus {
+  color:var(--pink);
+  text-shadow:0 0 20px var(--pink);
 }
 
 /* 💰 MONEDAS */
@@ -70,18 +196,14 @@ body {
   to { transform:translateY(200px); opacity:0; }
 }
 
-/* RESULTADO */
-#resultado.win {
-  color:#00ff9f;
-  text-shadow:0 0 10px #00ff9f;
-}
+/* 📱 RESPONSIVE */
+@media (max-width:500px) {
+  .slot-grid {
+    grid-template-columns: repeat(5, 60px);
+  }
 
-#resultado.lose {
-  color:#ff4d4d;
-}
-
-/* BONUS */
-#resultado.bonus {
-  color:#ff2bd6;
-  text-shadow:0 0 20px #ff2bd6;
+  .reel {
+    width:60px;
+    height:60px;
+  }
 }
