@@ -1,60 +1,35 @@
 :root {
-  --bg: #05060b;
-  --neon: #00f0ff;
-  --pink: #ff2bd6;
-  --gold: #f3d77a;
-  --green: #00ff9f;
-  --red: #ff4d4d;
+  --neon:#00f0ff;
+  --pink:#ff2bd6;
+  --bg:#05060b;
 }
 
 body {
   margin:0;
-  font-family: sans-serif;
-  color:#fff;
-  background: radial-gradient(circle at top, #0b1020, #05060b);
+  background: radial-gradient(circle,#0b1020,#05060b);
+  color:white;
+  font-family:sans-serif;
 }
 
-.page {
-  min-height:100vh;
+/* 🎰 GRID REAL 5x3 */
+.slot-grid {
   display:grid;
-  place-items:center;
-}
-
-.card, .slot-shell {
-  background: rgba(10,10,20,.9);
-  border:1px solid rgba(0,255,255,.2);
-  border-radius:20px;
-  padding:20px;
-  box-shadow:0 0 40px rgba(0,255,255,.1);
-}
-
-.kpi { display:flex; gap:10px; flex-wrap:wrap; }
-.pill {
-  background:#111;
-  padding:10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.1);
+  grid-template-columns: repeat(5, 90px);
+  gap:10px;
+  justify-content:center;
+  margin:20px 0;
 }
 
 /* 🎰 REELS */
 .reel {
   width:90px;
   height:90px;
-  border-radius:14px;
   background:#000;
+  border-radius:12px;
   display:grid;
   place-items:center;
-  position:relative;
   overflow:hidden;
-}
-
-.reel::after {
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:14px;
-  box-shadow:0 0 10px var(--neon);
-  opacity:.2;
+  box-shadow:0 0 10px rgba(0,255,255,.2);
 }
 
 .reel.spinning {
@@ -74,47 +49,39 @@ body {
 
 /* 🎰 BOTÓN */
 .spin-btn {
-  background: linear-gradient(45deg, var(--neon), var(--pink));
+  background:linear-gradient(45deg,var(--neon),var(--pink));
   border:none;
-  padding:14px;
-  border-radius:14px;
-  font-weight:bold;
+  padding:12px;
+  border-radius:10px;
   cursor:pointer;
-  box-shadow:0 0 20px var(--neon);
-}
-
-.spin-btn:hover {
-  transform:scale(1.05);
+  color:#000;
+  font-weight:bold;
 }
 
 /* 💰 MONEDAS */
 .coin {
   position:fixed;
+  top:0;
   font-size:20px;
-  animation:coinFall 1s linear forwards;
+  animation:fall 1s linear forwards;
 }
 
-@keyframes coinFall {
-  from { transform:translateY(-50px); opacity:1; }
+@keyframes fall {
   to { transform:translateY(200px); opacity:0; }
 }
 
-/* 🎉 WIN */
+/* RESULTADO */
 #resultado.win {
-  color:var(--green);
-  text-shadow:0 0 10px var(--green);
+  color:#00ff9f;
+  text-shadow:0 0 10px #00ff9f;
 }
 
 #resultado.lose {
-  color:var(--red);
+  color:#ff4d4d;
 }
 
-/* 🎁 BONUS */
-.bonus {
-  animation:bonusGlow 1s infinite alternate;
-}
-
-@keyframes bonusGlow {
-  from { box-shadow:0 0 10px var(--pink); }
-  to { box-shadow:0 0 30px var(--pink); }
+/* BONUS */
+#resultado.bonus {
+  color:#ff2bd6;
+  text-shadow:0 0 20px #ff2bd6;
 }
