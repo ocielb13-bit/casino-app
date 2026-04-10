@@ -3,7 +3,7 @@ let currentBet = 10;
 
 // 🎁 CONTROL FREESPINS REAL
 function controlFreeSpins(serverFreeSpins) {
-  if (serverFreeSpins > 20) return 20;
+  if (serverFreeSpins > 10) return 10;
   if (freeSpins > 0 && serverFreeSpins > freeSpins) return freeSpins;
   return serverFreeSpins;
 }
