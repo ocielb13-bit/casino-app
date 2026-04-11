@@ -1,3 +1,4 @@
+// 🔌 API
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -10,13 +11,22 @@ async function api(path, options = {}) {
     ...options
   });
 
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("Respuesta inválida del server");
+  }
+
   if (!res.ok) throw new Error(data.error || "Error");
+
   return data;
 }
 
+// 🎰 CONFIG
 const SYMBOL_PATH = "/assets/symbols/asian";
-
 const SYMBOLS = ["dragon","goldpot","coin","jade","lantern","wild","scatter"];
 
 let playing = false;
@@ -28,42 +38,39 @@ let freeBank = 0;
 let jackpotBank = 1000;
 let currentBet = 10;
 
-// 🎁 CONTROL FREESPINS (MAX 20 Y NO SUMA SI TENÉS ACTIVOS)
+// 🎁 FIX FREESPINS (ANTI EXPLOIT)
 function controlFreeSpins(serverFreeSpins) {
-  if (serverFreeSpins > 20) return 20;
-  if (freeSpins > 0 && serverFreeSpins > freeSpins) return freeSpins;
+  // límite duro
+  if (serverFreeSpins > 20) serverFreeSpins = 20;
+
+  // si ya estás en free spins → no acumula infinitamente
+  if (freeSpins > 0) {
+    return Math.max(freeSpins - 1, serverFreeSpins);
+  }
+
   return serverFreeSpins;
 }
 
 // 🎰 UI
 function updateUI() {
-  const saldoEl = document.getElementById("saldo");
-  const betEl = document.getElementById("betDisplay");
-  const freeEl = document.getElementById("freeLine");
-  const bankEl = document.getElementById("bankLine");
-  const jackpotEl = document.getElementById("jackpotLine");
-
-  if (saldoEl) saldoEl.textContent = saldoActual;
-  if (betEl) betEl.textContent = currentBet;
-  if (freeEl) freeEl.textContent = freeSpins;
-  if (bankEl) bankEl.textContent = freeBank;
-  if (jackpotEl) jackpotEl.textContent = jackpotBank;
+  document.getElementById("saldo").textContent = saldoActual;
+  document.getElementById("betDisplay").textContent = currentBet;
+  document.getElementById("freeLine").textContent = freeSpins;
+  document.getElementById("bankLine").textContent = freeBank;
+  document.getElementById("jackpotLine").textContent = jackpotBank;
 }
 
-// 🎰 CAMBIAR APUESTA (+ y -)
+// 🎰 APUESTA (+ y -)
 function changeBet(amount) {
   currentBet += amount;
 
   if (currentBet < 1) currentBet = 1;
-
-  if (currentBet > saldoActual) {
-    currentBet = saldoActual;
-  }
+  if (currentBet > saldoActual) currentBet = saldoActual;
 
   updateUI();
 }
 
-// 🎰 CARGAR SESIÓN
+// 🎰 SESSION
 async function loadSession() {
   const me = await api("/api/me");
 
@@ -74,34 +81,40 @@ async function loadSession() {
   const info = await api("/api/game-info");
   jackpotBank = Number(info.jackpot_bank || 1000);
 
-  const playerEl = document.getElementById("playerLine");
-  if (playerEl) playerEl.textContent = me.username;
+  document.getElementById("playerLine").textContent = me.username;
 
   updateUI();
 }
 
-// 🎰 FALLBACK IMAGEN
+// 🎰 FALLBACK
 function fallbackSvg(symbol) {
   return `data:image/svg+xml;charset=UTF-8,
   <svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>
     <rect width='200' height='200' fill='#000'/>
     <text x='100' y='110' font-size='24' fill='#0ff' text-anchor='middle'>
-      ${symbol.toUpperCase()}
+      ${symbol}
     </text>
   </svg>`;
 }
 
-// 🎰 SETEAR CELDA
+// 🎰 CELDA
 function setCell(id, symbol) {
   const img = document.getElementById("img-" + id);
   if (!img) return;
 
-  img.onerror = () => img.src = fallbackSvg(symbol);
-  img.src = `${SYMBOL_PATH}/${symbol}.png`;
+  const path = `${SYMBOL_PATH}/${symbol}.png`;
+
+  img.onerror = () => {
+    img.src = fallbackSvg(symbol);
+  };
+
+  img.src = path;
 }
 
-// 🎰 RENDER TABLERO
+// 🎰 BOARD
 function renderBoard(board) {
+  if (!board) return;
+
   board.forEach((row, r) => {
     row.forEach((symbol, c) => {
       setCell(`c${r+1}_${c}`, symbol);
@@ -109,12 +122,11 @@ function renderBoard(board) {
   });
 }
 
-// 🎰 RANDOM VISUAL
+// 🎰 FX
 function randomSymbol() {
   return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)];
 }
 
-// 🎰 ANIMACIÓN GIRO
 function startSpinFX() {
   stopSpinFX();
 
@@ -124,7 +136,7 @@ function startSpinFX() {
     document.querySelectorAll(".reel img").forEach(img => {
       img.src = fallbackSvg(randomSymbol());
     });
-  }, 60);
+  }, 80);
 }
 
 function stopSpinFX() {
@@ -134,9 +146,9 @@ function stopSpinFX() {
   document.querySelectorAll(".reel").forEach(r => r.classList.remove("spinning"));
 }
 
-// 💰 MONEDAS
+// 💰 FX MONEDAS
 function spawnCoins(amount) {
-  for (let i = 0; i < Math.min(amount, 20); i++) {
+  for (let i = 0; i < Math.min(amount, 15); i++) {
     const coin = document.createElement("div");
     coin.className = "coin";
     coin.innerText = "💰";
@@ -146,37 +158,14 @@ function spawnCoins(amount) {
   }
 }
 
-// 🎁 BONUS
-function triggerBonus() {
-  const el = document.getElementById("resultado");
-  el.textContent = "🎁 BONUS!";
-  el.className = "bonus";
-
-  const win = Math.floor(Math.random()*200)+50;
-
-  setTimeout(()=>{
-    el.textContent = `🎉 Bonus ganó ${win}`;
-    spawnCoins(win);
-  },1500);
-}
-
-// 🎰 MULTIPLICADOR
-function applyMultiplier(win) {
-  const r = Math.random();
-  if (r < 0.03) return win * 5;
-  if (r < 0.1) return win * 2;
-  return win;
-}
-
-// 🎰 SPIN PRINCIPAL
+// 🎰 SPIN
 async function jugar() {
   if (playing) return;
 
   const btn = document.getElementById("spinBtn");
   const resultado = document.getElementById("resultado");
 
-  // 🚫 SALDO INSUFICIENTE
-  if (currentBet > saldoActual) {
+  if (currentBet > saldoActual && freeSpins <= 0) {
     resultado.textContent = "Saldo insuficiente";
     return;
   }
@@ -185,37 +174,29 @@ async function jugar() {
   btn.disabled = true;
 
   resultado.textContent = "Girando...";
-  resultado.className = "";
 
   try {
     startSpinFX();
 
-    const [res] = await Promise.all([
-      api("/api/slots/spin", {
-        method:"POST",
-        body: JSON.stringify({ amount: currentBet })
-      }),
-      new Promise(r=>setTimeout(r,1200))
-    ]);
+    const res = await api("/api/slots/spin", {
+      method:"POST",
+      body: JSON.stringify({ amount: currentBet })
+    });
 
     stopSpinFX();
-    renderBoard(res.board);
 
-    // ✅ ACTUALIZACIÓN COMPLETA
-    saldoActual = Number(res.balance || saldoActual);
-    freeSpins = controlFreeSpins(res.freeSpins || 0);
-    freeBank = Number(res.freeSpinBank || freeBank);
-    jackpotBank = Number(res.jackpotBank || jackpotBank);
+    // 🔥 FIX FLEXIBLE (soporta cualquier backend)
+    const board = res.board || res.data?.board;
+    renderBoard(board);
+
+    saldoActual = Number(res.balance ?? res.data?.balance ?? saldoActual);
+    freeSpins = controlFreeSpins(res.freeSpins ?? res.data?.freeSpins ?? 0);
+    freeBank = Number(res.freeSpinBank ?? res.data?.freeSpinBank ?? freeBank);
+    jackpotBank = Number(res.jackpotBank ?? res.data?.jackpotBank ?? jackpotBank);
 
     updateUI();
 
-    let win = res.win || 0;
-    win = applyMultiplier(win);
-
-    // 🎁 BONUS
-    if (res.scatterCount >= 3) {
-      triggerBonus();
-    }
+    let win = res.win ?? res.data?.win ?? 0;
 
     if (win > 0) {
       resultado.textContent = `🎉 Ganaste ${win}`;
@@ -228,14 +209,15 @@ async function jugar() {
 
   } catch (err) {
     stopSpinFX();
-    resultado.textContent = "Error";
+    console.error(err);
+    resultado.textContent = err.message || "Error";
   }
 
   btn.disabled = false;
   playing = false;
 }
 
-// 🎰 INIT
+// INIT
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadSession();
