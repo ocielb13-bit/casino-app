@@ -1,11 +1,21 @@
 console.log("LOGIN JS CARGADO");
 
+let loggingIn = false;
+
 async function login() {
+  if (loggingIn) return;
+
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
   const errorText = document.getElementById("error");
 
-  errorText.innerText = "Cargando...";
+  if (!username || !password) {
+    errorText.textContent = "Poné usuario y contraseña";
+    return;
+  }
+
+  errorText.textContent = "Cargando...";
+  loggingIn = true;
 
   try {
     const res = await fetch("/api/login", {
@@ -16,10 +26,10 @@ async function login() {
       body: JSON.stringify({ username, password })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.success) {
-      errorText.innerText = data.error || "Error";
+      errorText.textContent = data.error || "Error";
       return;
     }
 
@@ -30,10 +40,15 @@ async function login() {
     if (data.role === "admin") {
       window.location.href = "/admin.html";
     } else {
-      window.location.href = "/menu.html"; // ✅ FIX
+      window.location.href = "/menu.html";
     }
-
   } catch {
-    errorText.innerText = "Error de conexión con el servidor";
+    errorText.textContent = "Error de conexión con el servidor";
+  } finally {
+    loggingIn = false;
   }
 }
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
