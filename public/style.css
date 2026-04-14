@@ -371,7 +371,7 @@ button.danger {
   width: min(100%, 560px);
   margin: 18px auto 8px;
   display: grid;
-  grid-template-columns: repeat(5, minmax(58px, 1fr));
+ grid-template-rows: repeat(3, 1fr);
   gap: 10px;
 }
 
