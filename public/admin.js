@@ -1,4 +1,4 @@
-console.log("ADMIN PANEL CARGADO");
+console.log("ADMIN JS OK");
 
 const token = localStorage.getItem("token");
 
@@ -6,53 +6,100 @@ if (!token) {
   window.location.href = "/";
 }
 
-/* ================= API HELPER ================= */
+/* ================= API ================= */
 
-async function api(path, options = {}) {
-  const res = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    ...options
-  });
+async function api(url, options = {}) {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      ...options
+    });
 
-  const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/";
+    if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.clear();
+        window.location.href = "/";
+      }
+      throw new Error(data.error || "Error API");
     }
-    throw new Error(data.error || "Error");
-  }
 
-  return data;
+    return data;
+  } catch (err) {
+    console.error("API ERROR:", err);
+    throw err;
+  }
 }
 
-/* ================= CARGAR SETTINGS ================= */
+/* ================= INIT ================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+  init();
+});
+
+async function init() {
+  await loadAdminInfo();
+  await loadSettings();
+  await loadUsers();
+}
+
+/* ================= ADMIN INFO ================= */
+
+async function loadAdminInfo() {
+  try {
+    const me = await api("/api/me");
+    document.getElementById("adminLine").textContent =
+      "Logueado como: " + me.username;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+/* ================= SETTINGS ================= */
 
 async function loadSettings() {
   try {
-    const data = await api("/api/admin/settings");
+    const s = await api("/api/admin/settings");
 
-    document.getElementById("win_rate").value = data.win_rate;
-    document.getElementById("multiplier").value = data.multiplier;
-    document.getElementById("jackpot_bank").value = data.jackpot_bank;
+    // inputs
+    document.getElementById("win_rate").value = s.win_rate;
+    document.getElementById("multiplier").value = s.multiplier;
+    document.getElementById("jackpot_bank").value = s.jackpot_bank;
+    document.getElementById("default_balance").value = s.default_balance;
+    document.getElementById("slot_pay_3").value = s.slot_pay_3;
+    document.getElementById("slot_pay_4").value = s.slot_pay_4;
+    document.getElementById("slot_pay_5").value = s.slot_pay_5;
+    document.getElementById("roulette_payout").value = s.roulette_payout;
+    document.getElementById("free_spin_award").value = s.free_spin_award;
 
-  } catch (err) {
-    console.error(err);
+    // KPI arriba
+    document.getElementById("currentWinRate").textContent = s.win_rate;
+    document.getElementById("currentMultiplier").textContent = s.multiplier;
+    document.getElementById("currentJackpot").textContent = s.jackpot_bank;
+    document.getElementById("currentDefaultBalance").textContent = s.default_balance;
+    document.getElementById("currentFreeAward").textContent = s.free_spin_award;
+
+  } catch (e) {
+    console.error("ERROR SETTINGS", e);
   }
 }
-
-/* ================= GUARDAR SETTINGS ================= */
 
 async function saveSettings() {
   try {
     const payload = {
-      win_rate: Number(document.getElementById("win_rate").value),
-      multiplier: Number(document.getElementById("multiplier").value),
-      jackpot_bank: Number(document.getElementById("jackpot_bank").value)
+      win_rate: Number(win_rate.value),
+      multiplier: Number(multiplier.value),
+      jackpot_bank: Number(jackpot_bank.value),
+      default_balance: Number(default_balance.value),
+      slot_pay_3: Number(slot_pay_3.value),
+      slot_pay_4: Number(slot_pay_4.value),
+      slot_pay_5: Number(slot_pay_5.value),
+      roulette_payout: Number(roulette_payout.value),
+      free_spin_award: Number(free_spin_award.value)
     };
 
     await api("/api/admin/settings", {
@@ -60,62 +107,78 @@ async function saveSettings() {
       body: JSON.stringify(payload)
     });
 
-    alert("✅ Config guardada");
+    alert("✅ Guardado");
+    loadSettings();
 
-  } catch (err) {
+  } catch (e) {
     alert("❌ Error guardando");
-    console.error(err);
   }
 }
 
-/* ================= USUARIOS ================= */
+/* ================= USERS ================= */
 
 async function loadUsers() {
   try {
     const data = await api("/api/admin/users");
 
-    const list = document.getElementById("userList");
-    list.innerHTML = "";
+    const container = document.getElementById("usersList");
+    container.innerHTML = "";
 
     data.users.forEach(u => {
       const div = document.createElement("div");
       div.className = "user";
 
       div.innerHTML = `
-        <span>${u.username} (${u.role}) - 💰 ${u.balance}</span>
+        <b>${u.username}</b> (${u.role})  
+        💰 ${u.balance}
       `;
 
-      list.appendChild(div);
+      container.appendChild(div);
     });
 
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    console.error("ERROR USERS", e);
   }
 }
 
-/* ================= CREAR USUARIO ================= */
-
 async function createUser() {
-  const username = document.getElementById("newUser").value;
-  const password = document.getElementById("newPass").value;
-
   try {
+    const payload = {
+      username: newUser.value,
+      password: newPass.value,
+      balance: Number(newBalance.value || 0),
+      role: newRole.value
+    };
+
     await api("/api/admin/users", {
       method: "POST",
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify(payload)
     });
 
     alert("✅ Usuario creado");
+
+    newUser.value = "";
+    newPass.value = "";
+    newBalance.value = "";
+
     loadUsers();
 
-  } catch (err) {
+  } catch (e) {
     alert("❌ Error creando usuario");
   }
 }
 
-/* ================= INIT ================= */
+/* ================= NAV ================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadSettings();
-  loadUsers();
-});
+function logout() {
+  localStorage.clear();
+  window.location.href = "/";
+}
+
+function goCasino() {
+  window.location.href = "/menu.html";
+}
+
+function reloadAll() {
+  init();
+}
