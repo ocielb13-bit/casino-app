@@ -36,12 +36,14 @@ function setGrid(board) {
   for (let col = 0; col < 5; col++) {
     for (let row = 0; row < 3; row++) {
       const img = document.getElementById(`r${col}c${row}`);
-      if (img) img.src = basePath + board[col][row];
+      if (img) {
+        img.src = basePath + board[col][row];
+      }
     }
   }
 }
 
-// ===== BOTONES =====
+// ===== BET =====
 function changeBet(amount) {
   currentBet += amount;
 
@@ -51,18 +53,19 @@ function changeBet(amount) {
   setText("bet", currentBet);
 }
 
-// ===== SCATTER SIMPLE =====
-function checkScatter(board) {
-  let count = 0;
-
-  board.flat().forEach(s => {
-    if (s === "scatter.png") count++;
-  });
-
-  return count >= 3;
+// ===== EFECTOS =====
+function clearWinEffects() {
+  document.querySelectorAll(".reel").forEach(el =>
+    el.classList.remove("win-line")
+  );
 }
 
-// ===== WIN SIMPLE =====
+// ===== SCATTER =====
+function checkScatter(board) {
+  return board.flat().filter(s => s === "scatter.png").length >= 3;
+}
+
+// ===== WIN =====
 function checkWin(board) {
   let win = 0;
 
@@ -71,8 +74,9 @@ function checkWin(board) {
     let count = 1;
 
     for (let col = 1; col < 5; col++) {
-      if (board[col][row] === first) count++;
-      else break;
+      if (board[col][row] === first || board[col][row] === "wild.png") {
+        count++;
+      } else break;
     }
 
     if (count >= 3) {
@@ -89,14 +93,7 @@ function checkWin(board) {
   return win;
 }
 
-// ===== LIMPIAR EFECTOS =====
-function clearWinEffects() {
-  document.querySelectorAll(".reel").forEach(el =>
-    el.classList.remove("win-line")
-  );
-}
-
-// ===== ANIMACION =====
+// ===== ANIMACION PRO =====
 async function spinVisual(board) {
   for (let col = 0; col < 5; col++) {
     await new Promise(resolve => {
@@ -105,12 +102,19 @@ async function spinVisual(board) {
       const interval = setInterval(() => {
         cycles++;
 
-        if (cycles > 10 + col * 4) {
+        // animación fake girando
+        for (let row = 0; row < 3; row++) {
+          const img = document.getElementById(`r${col}c${row}`);
+          img.style.transform = "scale(1.1)";
+        }
+
+        if (cycles > 10 + col * 3) {
           clearInterval(interval);
 
           for (let row = 0; row < 3; row++) {
-            document.getElementById(`r${col}c${row}`).src =
-              basePath + board[col][row];
+            const img = document.getElementById(`r${col}c${row}`);
+            img.src = basePath + board[col][row];
+            img.style.transform = "scale(1)";
           }
 
           resolve();
@@ -133,29 +137,18 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
-    const board = res.board || [
-      ["coin.png","coin.png","coin.png"],
-      ["coin.png","coin.png","coin.png"],
-      ["coin.png","coin.png","coin.png"],
-      ["coin.png","coin.png","coin.png"],
-      ["coin.png","coin.png","coin.png"]
-    ];
-
-    await spinVisual(board);
+    await spinVisual(res.board);
 
     saldoActual = res.balance;
     setText("saldo", saldoActual);
 
-    const scatter = checkScatter(board);
-    const win = checkWin(board);
-
     const result = document.getElementById("resultado");
 
-    if (scatter) {
-      result.textContent = "🎁 BONUS!";
+    if (res.freeSpins > 0) {
+      result.textContent = "🎁 FREE SPINS!";
       result.className = "bonus";
-    } else if (win > 0) {
-      result.textContent = `🔥 Ganaste ${win}`;
+    } else if (res.win > 0) {
+      result.textContent = `🔥 Ganaste ${res.win}`;
       result.className = "win";
     } else {
       result.textContent = "❌ Perdiste";
@@ -176,9 +169,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   saldoActual = me.balance;
   setText("saldo", saldoActual);
   setText("bet", currentBet);
-
-  // BOTONES SEGUROS
-  document.getElementById("btnMas100").onclick = () => changeBet(100);
-  document.getElementById("btnMenos100").onclick = () => changeBet(-100);
-  document.getElementById("btnSpin").onclick = jugar;
 });
+
+// 👇 IMPORTANTE
+window.jugar = jugar;
+window.changeBet = changeBet;
