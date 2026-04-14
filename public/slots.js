@@ -1,3 +1,4 @@
+// ===== API =====
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -25,13 +26,29 @@ async function api(path, options = {}) {
   return data;
 }
 
+// ===== CONFIG =====
+const basePath = "/assets/symbols/asian/";
+
+const weights = {
+  "coin.png": 30,
+  "jade.png": 25,
+  "lantern.png": 20,
+  "goldpot.png": 10,
+  "dragon.png": 8,
+  "wild.png": 5,
+  "scatter.png": 2
+};
+
+// ===== STATE =====
 let saldoActual = 0;
 let freeSpins = 0;
 let freeBank = 0;
 let jackpotBank = 1000;
 let currentBet = 10;
 let winRate = 30;
+let spinning = false;
 
+// ===== HELPERS =====
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value;
@@ -46,6 +63,65 @@ function updateUI() {
   setText("rtpLine", winRate);
 }
 
+// ===== RANDOM CON PESO =====
+function weightedRandom() {
+  const entries = Object.entries(weights);
+  const total = entries.reduce((sum, [_, w]) => sum + w, 0);
+
+  let rand = Math.random() * total;
+
+  for (const [symbol, weight] of entries) {
+    if (rand < weight) return symbol;
+    rand -= weight;
+  }
+
+  return "coin.png";
+}
+
+// ===== RENDER =====
+function setImage(col, row, symbol) {
+  const img = document.getElementById(`img-c${col}_${row}`);
+  if (img) {
+    img.src = basePath + symbol;
+  }
+}
+
+function renderRandomGrid() {
+  for (let c = 1; c <= 3; c++) {
+    for (let r = 0; r < 5; r++) {
+      setImage(c, r, weightedRandom());
+    }
+  }
+}
+
+// ===== ANIMACIÓN =====
+function spinAnimation() {
+  return new Promise((resolve) => {
+    let cycles = 0;
+
+    const interval = setInterval(() => {
+      renderRandomGrid();
+      cycles++;
+
+      if (cycles > 15) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 70);
+  });
+}
+
+// ===== APUESTA =====
+function changeBet(amount) {
+  currentBet += amount;
+
+  if (currentBet < 1) currentBet = 1;
+  if (currentBet > saldoActual) currentBet = saldoActual;
+
+  updateUI();
+}
+
+// ===== LOAD =====
 async function loadSession() {
   try {
     const me = await api("/api/me");
@@ -61,16 +137,24 @@ async function loadSession() {
     jackpotBank = Number(info.jackpot_bank || 1000);
     winRate = Number(info.win_rate || 30);
 
-    document.getElementById("playerLine").textContent = me.username;
+    setText("playerLine", me.username);
 
     updateUI();
+    renderRandomGrid();
+
   } catch (err) {
     console.error(err);
   }
 }
 
+// ===== SPIN =====
 async function jugar() {
+  if (spinning) return;
+  spinning = true;
+
   try {
+    await spinAnimation();
+
     const res = await api("/api/slots/spin", {
       method: "POST",
       body: JSON.stringify({ amount: currentBet })
@@ -85,12 +169,35 @@ async function jugar() {
 
     updateUI();
 
-    document.getElementById("resultado").textContent =
-      res.win > 0 ? `Ganaste ${res.win}` : "Perdiste";
+    // Resultado visual final
+    renderRandomGrid();
+
+    setText(
+      "resultado",
+      res.win > 0 ? `🔥 Ganaste ${res.win}` : "❌ Perdiste"
+    );
+
+    // ===== EFECTO GANAR =====
+    if (res.win > 0) {
+      document.querySelectorAll(".reel img").forEach(img => {
+        img.style.transform = "scale(1.2)";
+        img.style.filter = "brightness(1.5)";
+      });
+
+      setTimeout(() => {
+        document.querySelectorAll(".reel img").forEach(img => {
+          img.style.transform = "scale(1)";
+          img.style.filter = "none";
+        });
+      }, 500);
+    }
 
   } catch (err) {
     console.error(err);
+  } finally {
+    spinning = false;
   }
 }
 
+// ===== INIT =====
 document.addEventListener("DOMContentLoaded", loadSession);
