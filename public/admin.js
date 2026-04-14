@@ -24,7 +24,7 @@ async function api(path, options = {}) {
 }
 
 function goCasino() {
-  window.location.href = "/casino.html";
+  window.location.href = "/menu.html";
 }
 
 function setMsg(text) {
@@ -32,12 +32,19 @@ function setMsg(text) {
   if (el) el.textContent = text;
 }
 
+function clampInt(value, min, max) {
+  const n = Math.floor(Number(value) || 0);
+  return Math.max(min, Math.min(max, n));
+}
+
 async function loadMe() {
   const me = await api("/api/me");
+
   if (me.role !== "admin") {
-    window.location.href = "/casino.html";
+    window.location.href = "/menu.html";
     return;
   }
+
   document.getElementById("adminLine").textContent = `Admin: ${me.username}`;
 }
 
@@ -48,6 +55,7 @@ async function loadSettings() {
   document.getElementById("currentMultiplier").textContent = s.multiplier;
   document.getElementById("currentJackpot").textContent = s.jackpot_bank;
   document.getElementById("currentDefaultBalance").textContent = s.default_balance;
+  document.getElementById("currentFreeAward").textContent = s.free_spin_award;
 
   document.getElementById("win_rate").value = s.win_rate;
   document.getElementById("multiplier").value = s.multiplier;
@@ -57,6 +65,7 @@ async function loadSettings() {
   document.getElementById("slot_pay_4").value = s.slot_pay_4;
   document.getElementById("slot_pay_5").value = s.slot_pay_5;
   document.getElementById("roulette_payout").value = s.roulette_payout;
+  document.getElementById("free_spin_award").value = s.free_spin_award;
 }
 
 async function loadUsers() {
@@ -74,15 +83,17 @@ async function loadUsers() {
           <strong>${u.username}</strong>
           <div class="small">ID: ${u.id} · <span class="tag">${u.role}</span></div>
         </div>
-        <div class="small">Saldo actual: <strong>${u.balance}</strong></div>
+        <div class="small">
+          Saldo: <strong>${u.balance}</strong> · FS: <strong>${u.free_spins || 0}</strong> · Banco: <strong>${u.free_spin_bank || 0}</strong>
+        </div>
       </div>
 
-      <div class="row">
+      <div class="form-grid">
         <input id="bal-${u.id}" type="number" value="${u.balance}">
         <button type="button" onclick="setBalance(${u.id})">Guardar saldo</button>
         <button type="button" onclick="addBalance(${u.id}, 100)">+100</button>
         <button type="button" onclick="addBalance(${u.id}, -100)">-100</button>
-        <button type="button" onclick="toggleRole(${u.id}, '${u.role === 'admin' ? 'player' : 'admin'}')">
+        <button type="button" onclick="toggleRole(${u.id}, '${u.role === "admin" ? "player" : "admin"}')">
           ${u.role === "admin" ? "Quitar admin" : "Hacer admin"}
         </button>
         <button type="button" class="danger" onclick="deleteUser(${u.id}, '${u.username}')">Eliminar</button>
@@ -102,7 +113,8 @@ async function saveSettings() {
     slot_pay_3: parseInt(document.getElementById("slot_pay_3").value, 10),
     slot_pay_4: parseInt(document.getElementById("slot_pay_4").value, 10),
     slot_pay_5: parseInt(document.getElementById("slot_pay_5").value, 10),
-    roulette_payout: parseInt(document.getElementById("roulette_payout").value, 10)
+    roulette_payout: parseInt(document.getElementById("roulette_payout").value, 10),
+    free_spin_award: parseInt(document.getElementById("free_spin_award").value, 10)
   };
 
   await api("/api/admin/settings", {
