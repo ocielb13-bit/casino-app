@@ -9,14 +9,6 @@
 
 <body class="app-page">
 
-<script>
-  // 🔒 PROTECCIÓN INMEDIATA
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/";
-  }
-</script>
-
 <div class="page">
   <div class="admin-shell">
 
@@ -45,7 +37,7 @@
     <!-- SETTINGS -->
     <div class="lobby-hero">
       <h2>Configuración global</h2>
-      <p>Los valores se guardan en Supabase.</p>
+      <p>Los valores se guardan en el server.</p>
     </div>
 
     <div class="form-grid">
