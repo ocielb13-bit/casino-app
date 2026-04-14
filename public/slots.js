@@ -1,18 +1,9 @@
 const basePath = "/assets/symbols/asian/";
 
-const symbols = [
-  "coin.png",
-  "jade.png",
-  "lantern.png",
-  "goldpot.png",
-  "dragon.png",
-  "wild.png",
-  "scatter.png"
-];
-
 let saldoActual = 0;
 let currentBet = 100;
 let spinning = false;
+let freeSpins = 0;
 
 // ===== API =====
 async function api(path, options = {}) {
@@ -51,98 +42,112 @@ function setGrid(board) {
   }
 }
 
-// ===== RANDOM =====
-function randomBoard() {
-  return Array.from({ length: 5 }, () =>
-    Array.from({ length: 3 }, () =>
-      symbols[Math.floor(Math.random() * symbols.length)]
-    )
-  );
-}
-
-// ===== BOTONES APUESTA =====
+// ===== BOTONES =====
 function changeBet(amount) {
   currentBet += amount;
-
   if (currentBet < 10) currentBet = 10;
   if (currentBet > 10000) currentBet = 10000;
 
   setText("bet", currentBet);
 }
 
-// ===== ANIMACIÓN PRO =====
-async function spinVisual(finalBoard) {
+// ===== PAYLINES (10 líneas) =====
+const paylines = [
+  [0,0,0,0,0],
+  [1,1,1,1,1],
+  [2,2,2,2,2],
+  [0,1,2,1,0],
+  [2,1,0,1,2],
+  [0,0,1,0,0],
+  [2,2,1,2,2],
+  [1,0,1,2,1],
+  [1,2,1,0,1],
+  [0,1,1,1,0]
+];
+
+// ===== PAGOS =====
+const paytable = {
+  coin: [0, 0, 5, 10, 20],
+  jade: [0, 0, 6, 12, 25],
+  lantern: [0, 0, 8, 15, 30],
+  goldpot: [0, 0, 10, 20, 40],
+  dragon: [0, 0, 15, 30, 60],
+  wild: [0, 0, 20, 50, 100]
+};
+
+// ===== CALCULAR GANANCIA =====
+function evaluate(board) {
+  let total = 0;
+
+  document.querySelectorAll(".reel").forEach(el =>
+    el.classList.remove("win-line")
+  );
+
+  paylines.forEach(line => {
+    let first = board[0][line[0]].replace(".png","");
+    let count = 1;
+
+    for (let col = 1; col < 5; col++) {
+      let symbol = board[col][line[col]].replace(".png","");
+
+      if (symbol === first || symbol === "wild") {
+        count++;
+      } else break;
+    }
+
+    if (count >= 3 && paytable[first]) {
+      total += paytable[first][count-1] * currentBet;
+
+      for (let col = 0; col < count; col++) {
+        document
+          .getElementById(`r${col}c${line[col]}`)
+          .parentElement.classList.add("win-line");
+      }
+    }
+  });
+
+  return total;
+}
+
+// ===== SCATTER =====
+function checkScatter(board) {
+  let count = 0;
+
+  board.flat().forEach(s => {
+    if (s === "scatter.png") count++;
+  });
+
+  if (count >= 3) {
+    freeSpins += 5;
+    return true;
+  }
+
+  return false;
+}
+
+// ===== ANIMACION =====
+async function spinVisual(board) {
   for (let col = 0; col < 5; col++) {
     await new Promise(resolve => {
       let speed = 50;
       let cycles = 0;
 
       const interval = setInterval(() => {
-        const temp = randomBoard();
-        setGrid(temp);
-
-        speed *= 1.08;
+        speed *= 1.1;
         cycles++;
 
-        if (cycles > 12 + col * 5) {
+        if (cycles > 10 + col * 4) {
           clearInterval(interval);
 
           for (let row = 0; row < 3; row++) {
             document.getElementById(`r${col}c${row}`).src =
-              basePath + finalBoard[col][row];
+              basePath + board[col][row];
           }
 
           resolve();
         }
       }, speed);
     });
-  }
-}
-
-// ===== WIN + LINEAS =====
-function checkWin(board) {
-  let totalWin = 0;
-
-  document.querySelectorAll(".reel").forEach(el =>
-    el.classList.remove("win-line")
-  );
-
-  for (let row = 0; row < 3; row++) {
-    let first = board[0][row];
-    let count = 1;
-
-    for (let col = 1; col < 5; col++) {
-      if (board[col][row] === first) count++;
-      else break;
-    }
-
-    if (count >= 3) {
-      totalWin += currentBet * count;
-
-      // iluminar línea
-      for (let col = 0; col < count; col++) {
-        document
-          .getElementById(`r${col}c${row}`)
-          .parentElement.classList.add("win-line");
-      }
-    }
-  }
-
-  return totalWin;
-}
-
-// ===== EFECTO MONEDAS 💰 =====
-function coinEffect() {
-  for (let i = 0; i < 15; i++) {
-    const coin = document.createElement("div");
-    coin.className = "coin";
-    coin.textContent = "💰";
-
-    coin.style.left = Math.random() * 100 + "%";
-
-    document.body.appendChild(coin);
-
-    setTimeout(() => coin.remove(), 1000);
   }
 }
 
@@ -157,26 +162,33 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
-    saldoActual = res.balance;
-    setText("saldo", saldoActual);
-
-    const board = randomBoard();
+    const board = res.board; // 🔥 REAL DESDE BACKEND
 
     await spinVisual(board);
 
-    const win = checkWin(board);
+    saldoActual = res.balance;
+    setText("saldo", saldoActual);
+
+    const scatter = checkScatter(board);
+    const win = evaluate(board);
 
     const result = document.getElementById("resultado");
 
-    if (win > 0) {
+    if (scatter) {
+      result.textContent = "🎁 FREE SPINS ACTIVADOS!";
+      result.className = "bonus";
+    } else if (win > 0) {
       result.textContent = `🔥 Ganaste ${win}`;
       result.className = "win";
-
-      coinEffect();
-
     } else {
       result.textContent = "❌ Perdiste";
       result.className = "lose";
+    }
+
+    // free spins auto
+    if (freeSpins > 0) {
+      freeSpins--;
+      setTimeout(jugar, 1200);
     }
 
   } catch (e) {
@@ -194,9 +206,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   setText("saldo", saldoActual);
   setText("bet", currentBet);
 
-  setGrid(randomBoard());
-
-  // botones
   window.mas100 = () => changeBet(100);
   window.menos100 = () => changeBet(-100);
   window.spin = jugar;
