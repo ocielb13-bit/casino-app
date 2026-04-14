@@ -15,8 +15,8 @@ async function api(path, options = {}) {
   return data;
 }
 
-// 📜 HISTORIAL
 let history = [];
+let spinning = false;
 
 function saveHistory() {
   localStorage.setItem("rouletteHistory", JSON.stringify(history.slice(0, 5)));
@@ -53,64 +53,63 @@ function addHistory(result, win) {
   renderHistory();
 }
 
-// 👤 USUARIO
 async function loadMe() {
   try {
     const me = await api("/api/me");
-
-    if (me.role === "admin") {
-      window.location.href = "/admin.html";
-      return;
-    }
-
     document.getElementById("playerLine").textContent = `Usuario: ${me.username}`;
     document.getElementById("saldo").textContent = me.balance;
 
+    const info = await api("/api/game-info");
+    document.getElementById("payoutLine").textContent = `${info.roulette_payout || 35}:1`;
   } catch {
     localStorage.removeItem("token");
     window.location.href = "/";
   }
 }
 
-// 🎡 ANIMACIÓN PRO
+function limpiar() {
+  document.getElementById("numero").value = "";
+  document.getElementById("apuesta").value = "";
+  document.getElementById("resultado").textContent = "";
+}
+
 function animateWheel(finalNumber) {
   return new Promise((resolve) => {
     const wheel = document.getElementById("wheel");
 
     let duration = 2000;
     let start = null;
+    let frame = 0;
 
     function spin(timestamp) {
       if (!start) start = timestamp;
-      let progress = timestamp - start;
+      const progress = timestamp - start;
 
-      let speed = Math.max(0.1, 1 - progress / duration);
-      let random = Math.floor(Math.random() * 37);
+      wheel.classList.add("spinning");
+      wheel.textContent = Math.floor(Math.random() * 37);
+      wheel.style.transform = `rotate(${progress * 0.45}deg) scale(${1 + Math.sin(progress / 70) * 0.01})`;
 
-      wheel.textContent = random;
-      wheel.style.transform = `rotate(${progress * 0.3}deg)`;
+      frame += 1;
 
       if (progress < duration) {
         requestAnimationFrame(spin);
       } else {
         wheel.textContent = finalNumber;
         wheel.style.transform = "rotate(0deg)";
+        wheel.classList.remove("spinning");
         resolve();
       }
     }
 
-    wheel.classList.add("spinning");
     requestAnimationFrame(spin);
-
-    setTimeout(() => {
-      wheel.classList.remove("spinning");
-    }, duration);
   });
 }
 
-// 🎯 JUGAR
 async function jugar() {
+  if (spinning) return;
+
   const resultado = document.getElementById("resultado");
+  const btn = document.querySelector('button[onclick="jugar()"]');
 
   try {
     const numero = parseInt(document.getElementById("numero").value, 10);
@@ -125,6 +124,9 @@ async function jugar() {
       resultado.textContent = "Poné una apuesta válida.";
       return;
     }
+
+    spinning = true;
+    if (btn) btn.disabled = true;
 
     resultado.textContent = "🎡 Girando...";
 
@@ -149,13 +151,14 @@ async function jugar() {
     }
 
     addHistory(data.result, data.win);
-
   } catch (err) {
     resultado.textContent = "❌ " + err.message;
+  } finally {
+    spinning = false;
+    if (btn) btn.disabled = false;
   }
 }
 
-// 🚀 INIT
 document.addEventListener("DOMContentLoaded", async () => {
   loadHistory();
   await loadMe();
