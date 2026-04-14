@@ -5,7 +5,6 @@ import bcrypt from "bcrypt";
 import { createClient } from "@supabase/supabase-js";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +15,6 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
-const SETTINGS_FILE = path.join(__dirname, "casino_settings.json");
 
 // 👑 ADMIN AUTO
 const BOOTSTRAP_ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
@@ -34,7 +32,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
-/* ================= SETTINGS ================= */
+/* ================= SETTINGS (SUPABASE) ================= */
 
 const DEFAULT_SETTINGS = {
   win_rate: 30,
@@ -48,35 +46,48 @@ const DEFAULT_SETTINGS = {
   free_spin_award: 5
 };
 
-async function ensureSettingsFile() {
-  try {
-    await fs.access(SETTINGS_FILE);
-  } catch {
-    await fs.writeFile(
-      SETTINGS_FILE,
-      JSON.stringify(DEFAULT_SETTINGS, null, 2)
-    );
+async function getSetting(key, fallback) {
+  const { data } = await supabase
+    .from("game_settings")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+
+  if (!data) return fallback;
+
+  const n = Number(data.value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+async function getAllSettings() {
+  const { data } = await supabase
+    .from("game_settings")
+    .select("*");
+
+  const settings = { ...DEFAULT_SETTINGS };
+
+  for (const row of data || []) {
+    const n = Number(row.value);
+    settings[row.key] = Number.isFinite(n) ? n : row.value;
+  }
+
+  return settings;
+}
+
+async function saveSettings(values) {
+  const rows = Object.entries(values).map(([key, value]) => ({
+    key,
+    value: String(value)
+  }));
+
+  if (rows.length > 0) {
+    await supabase
+      .from("game_settings")
+      .upsert(rows, { onConflict: "key" });
   }
 }
 
-async function readSettings() {
-  await ensureSettingsFile();
-  const raw = await fs.readFile(SETTINGS_FILE, "utf8");
-  return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-}
-
-async function saveSettings(patch) {
-  const current = await readSettings();
-  const next = { ...current, ...patch };
-  await fs.writeFile(SETTINGS_FILE, JSON.stringify(next, null, 2));
-  return next;
-}
-
 /* ================= HELPERS ================= */
-
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
 
 function toInt(v) {
   return Math.floor(Number(v) || 0);
@@ -156,7 +167,7 @@ function adminOnly(req, res, next) {
   next();
 }
 
-/* ================= ADMIN AUTO FIX ================= */
+/* ================= ADMIN AUTO ================= */
 
 async function ensureBootstrapAdmin() {
   const admin = await getUserByUsername(BOOTSTRAP_ADMIN_USERNAME);
@@ -217,15 +228,15 @@ app.get("/api/me", authRequired, (req, res) => {
   res.json(req.user);
 });
 
-/* ================= SETTINGS ADMIN ================= */
+/* ================= ADMIN SETTINGS ================= */
 
 app.get("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
-  res.json(await readSettings());
+  res.json(await getAllSettings());
 });
 
 app.put("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
-  const updated = await saveSettings(req.body);
-  res.json(updated);
+  await saveSettings(req.body);
+  res.json(await getAllSettings());
 });
 
 /* ================= SLOTS ================= */
@@ -233,7 +244,7 @@ app.put("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   const bet = toInt(req.body.amount);
   const user = await getUserById(req.user.id);
-  const settings = await readSettings();
+  const settings = await getAllSettings();
 
   if (user.balance < bet) {
     return res.status(400).json({ error: "Saldo insuficiente" });
