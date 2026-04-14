@@ -1,35 +1,49 @@
-function token() {
-  return localStorage.getItem("token") || "";
-}
-
-function headers() {
-  return {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer " + token()
-  };
-}
-
 async function api(path, options = {}) {
+  const token = localStorage.getItem("token");
+
   const res = await fetch(path, {
     headers: {
-      ...headers(),
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
       ...(options.headers || {})
     },
     ...options
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Error");
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!res.ok) {
+    throw new Error(data.error || `Error ${res.status}`);
+  }
+
   return data;
+}
+
+function setMsg(text, type = "") {
+  const el = document.getElementById("msg");
+  if (!el) return;
+  el.textContent = text || "";
+  el.dataset.type = type;
 }
 
 function goCasino() {
   window.location.href = "/menu.html";
 }
 
-function setMsg(text) {
-  const el = document.getElementById("msg");
-  if (el) el.textContent = text;
+function logout() {
+  localStorage.clear();
+  window.location.href = "/";
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 function clampInt(value, min, max) {
@@ -38,39 +52,63 @@ function clampInt(value, min, max) {
 }
 
 async function loadMe() {
-  const me = await api("/api/me");
+  const token = localStorage.getItem("token");
 
-  if (me.role !== "admin") {
-    window.location.href = "/menu.html";
-    return;
+  if (!token) {
+    window.location.href = "/";
+    return false;
   }
 
-  document.getElementById("adminLine").textContent = `Admin: ${me.username}`;
+  try {
+    const me = await api("/api/me");
+
+    if (me.role !== "admin") {
+      window.location.href = "/menu.html";
+      return false;
+    }
+
+    setText("adminLine", `Admin: ${me.username}`);
+    return true;
+  } catch (err) {
+    setMsg(`Sesión inválida: ${err.message}`, "error");
+    localStorage.removeItem("token");
+    window.location.href = "/";
+    return false;
+  }
 }
 
 async function loadSettings() {
   const s = await api("/api/admin/settings");
 
-  document.getElementById("currentWinRate").textContent = s.win_rate;
-  document.getElementById("currentMultiplier").textContent = s.multiplier;
-  document.getElementById("currentJackpot").textContent = s.jackpot_bank;
-  document.getElementById("currentDefaultBalance").textContent = s.default_balance;
-  document.getElementById("currentFreeAward").textContent = s.free_spin_award;
+  setText("currentWinRate", s.win_rate);
+  setText("currentMultiplier", s.multiplier);
+  setText("currentJackpot", s.jackpot_bank);
+  setText("currentDefaultBalance", s.default_balance);
+  setText("currentFreeAward", s.free_spin_award);
 
-  document.getElementById("win_rate").value = s.win_rate;
-  document.getElementById("multiplier").value = s.multiplier;
-  document.getElementById("jackpot_bank").value = s.jackpot_bank;
-  document.getElementById("default_balance").value = s.default_balance;
-  document.getElementById("slot_pay_3").value = s.slot_pay_3;
-  document.getElementById("slot_pay_4").value = s.slot_pay_4;
-  document.getElementById("slot_pay_5").value = s.slot_pay_5;
-  document.getElementById("roulette_payout").value = s.roulette_payout;
-  document.getElementById("free_spin_award").value = s.free_spin_award;
+  const ids = [
+    "win_rate",
+    "multiplier",
+    "jackpot_bank",
+    "default_balance",
+    "slot_pay_3",
+    "slot_pay_4",
+    "slot_pay_5",
+    "roulette_payout",
+    "free_spin_award"
+  ];
+
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && s[id] !== undefined) el.value = s[id];
+  });
 }
 
 async function loadUsers() {
   const data = await api("/api/admin/users");
   const box = document.getElementById("usersList");
+  if (!box) return;
+
   box.innerHTML = "";
 
   data.users.forEach((u) => {
@@ -105,111 +143,75 @@ async function loadUsers() {
 }
 
 async function saveSettings() {
-  const payload = {
-    win_rate: parseFloat(document.getElementById("win_rate").value),
-    multiplier: parseFloat(document.getElementById("multiplier").value),
-    jackpot_bank: parseInt(document.getElementById("jackpot_bank").value, 10),
-    default_balance: parseInt(document.getElementById("default_balance").value, 10),
-    slot_pay_3: parseInt(document.getElementById("slot_pay_3").value, 10),
-    slot_pay_4: parseInt(document.getElementById("slot_pay_4").value, 10),
-    slot_pay_5: parseInt(document.getElementById("slot_pay_5").value, 10),
-    roulette_payout: parseInt(document.getElementById("roulette_payout").value, 10),
-    free_spin_award: parseInt(document.getElementById("free_spin_award").value, 10)
-  };
+  try {
+    const payload = {
+      win_rate: parseFloat(document.getElementById("win_rate").value),
+      multiplier: parseFloat(document.getElementById("multiplier").value),
+      jackpot_bank: parseInt(document.getElementById("jackpot_bank").value, 10),
+      default_balance: parseInt(document.getElementById("default_balance").value, 10),
+      slot_pay_3: parseInt(document.getElementById("slot_pay_3").value, 10),
+      slot_pay_4: parseInt(document.getElementById("slot_pay_4").value, 10),
+      slot_pay_5: parseInt(document.getElementById("slot_pay_5").value, 10),
+      roulette_payout: parseInt(document.getElementById("roulette_payout").value, 10),
+      free_spin_award: parseInt(document.getElementById("free_spin_award").value, 10)
+    };
 
-  await api("/api/admin/settings", {
-    method: "PUT",
-    body: JSON.stringify(payload)
-  });
+    await api("/api/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
 
-  setMsg("Ajustes guardados");
-  await reloadAll();
+    setMsg("Ajustes guardados");
+    await reloadAll();
+  } catch (err) {
+    setMsg(err.message, "error");
+  }
 }
 
 async function createUser() {
-  const username = document.getElementById("newUser").value.trim();
-  const password = document.getElementById("newPass").value.trim();
-  const balance = document.getElementById("newBalance").value;
-  const role = document.getElementById("newRole").value;
+  try {
+    const username = document.getElementById("newUser").value.trim();
+    const password = document.getElementById("newPass").value.trim();
+    const balance = document.getElementById("newBalance").value;
+    const role = document.getElementById("newRole").value;
 
-  if (!username || !password) {
-    setMsg("Poné usuario y contraseña");
-    return;
+    if (!username || !password) {
+      setMsg("Poné usuario y contraseña", "error");
+      return;
+    }
+
+    await api("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify({ username, password, balance, role })
+    });
+
+    document.getElementById("newUser").value = "";
+    document.getElementById("newPass").value = "";
+    document.getElementById("newBalance").value = "";
+    document.getElementById("newRole").value = "player";
+
+    setMsg("Usuario creado");
+    await reloadAll();
+  } catch (err) {
+    setMsg(err.message, "error");
   }
-
-  await api("/api/admin/users", {
-    method: "POST",
-    body: JSON.stringify({ username, password, balance, role })
-  });
-
-  document.getElementById("newUser").value = "";
-  document.getElementById("newPass").value = "";
-  document.getElementById("newBalance").value = "";
-  document.getElementById("newRole").value = "player";
-
-  setMsg("Usuario creado");
-  await reloadAll();
 }
 
 async function addBalance(id, delta) {
-  await api(`/api/admin/users/${id}/balance`, {
-    method: "PATCH",
-    body: JSON.stringify({ delta })
-  });
+  try {
+    await api(`/api/admin/users/${id}/balance`, {
+      method: "PATCH",
+      body: JSON.stringify({ delta })
+    });
 
-  await reloadAll();
+    await reloadAll();
+  } catch (err) {
+    setMsg(err.message, "error");
+  }
 }
 
 async function setBalance(id) {
-  const balance = parseInt(document.getElementById(`bal-${id}`).value, 10);
-
-  await api(`/api/admin/users/${id}/balance`, {
-    method: "PUT",
-    body: JSON.stringify({ balance })
-  });
-
-  await reloadAll();
-}
-
-async function toggleRole(id, role) {
-  await api(`/api/admin/users/${id}/role`, {
-    method: "PATCH",
-    body: JSON.stringify({ role })
-  });
-
-  await reloadAll();
-}
-
-async function deleteUser(id, username) {
-  if (!confirm(`¿Eliminar a ${username}?`)) return;
-
-  await api(`/api/admin/users/${id}`, {
-    method: "DELETE"
-  });
-
-  await reloadAll();
-}
-
-async function logout() {
-  localStorage.clear();
   try {
-    await api("/api/logout", { method: "POST" });
-  } catch {}
-  window.location.href = "/";
-}
+    const balance = parseInt(document.getElementById(`bal-${id}`).value, 10);
 
-async function reloadAll() {
-  await loadSettings();
-  await loadUsers();
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await loadMe();
-    await reloadAll();
-  } catch (err) {
-    setMsg(err.message);
-    localStorage.clear();
-    window.location.href = "/";
-  }
-});
+    await api(`/api/admin/users/${id}/balance`,
