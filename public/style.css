@@ -371,7 +371,10 @@ button.danger {
   width: min(100%, 560px);
   margin: 18px auto 8px;
   display: grid;
- grid-template-rows: repeat(3, 1fr);
+
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+
   gap: 10px;
 }
 
@@ -703,6 +706,7 @@ button.danger {
     transform: translateY(220px);
     opacity: 0;
   }
+}
 /* ===== SLOT MEJORAS VISUALES ===== */
 
 .reel img {
