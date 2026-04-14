@@ -50,7 +50,7 @@ function changeBet(amount) {
   if (currentBet < 10) currentBet = 10;
   if (currentBet > 10000) currentBet = 10000;
 
-  setText("bet", currentBet);
+  setText("betDisplay", currentBet);
 }
 
 // ===== EFECTOS =====
@@ -60,40 +60,7 @@ function clearWinEffects() {
   );
 }
 
-// ===== SCATTER =====
-function checkScatter(board) {
-  return board.flat().filter(s => s === "scatter.png").length >= 3;
-}
-
-// ===== WIN =====
-function checkWin(board) {
-  let win = 0;
-
-  for (let row = 0; row < 3; row++) {
-    let first = board[0][row];
-    let count = 1;
-
-    for (let col = 1; col < 5; col++) {
-      if (board[col][row] === first || board[col][row] === "wild.png") {
-        count++;
-      } else break;
-    }
-
-    if (count >= 3) {
-      win += currentBet * count;
-
-      for (let col = 0; col < count; col++) {
-        document
-          .getElementById(`r${col}c${row}`)
-          .parentElement.classList.add("win-line");
-      }
-    }
-  }
-
-  return win;
-}
-
-// ===== ANIMACION PRO =====
+// ===== ANIMACION =====
 async function spinVisual(board) {
   for (let col = 0; col < 5; col++) {
     await new Promise(resolve => {
@@ -102,7 +69,6 @@ async function spinVisual(board) {
       const interval = setInterval(() => {
         cycles++;
 
-        // animación fake girando
         for (let row = 0; row < 3; row++) {
           const img = document.getElementById(`r${col}c${row}`);
           img.style.transform = "scale(1.1)";
@@ -137,6 +103,12 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
+    if (!res || !res.board) {
+      console.error("Respuesta inválida:", res);
+      spinning = false;
+      return;
+    }
+
     await spinVisual(res.board);
 
     saldoActual = res.balance;
@@ -168,9 +140,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   saldoActual = me.balance;
   setText("saldo", saldoActual);
-  setText("bet", currentBet);
+  setText("betDisplay", currentBet);
 });
 
-// 👇 IMPORTANTE
 window.jugar = jugar;
 window.changeBet = changeBet;
