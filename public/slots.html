@@ -27,36 +27,32 @@
           <div class="pill">🏦 Banco FS: <strong id="bankLine">0</strong></div>
           <div class="pill">💎 Jackpot: <strong id="jackpotLine">1000</strong></div>
           <div class="pill">📈 RTP: <strong id="rtpLine">30</strong>%</div>
-          <div class="pill">🎯 Apuesta: <strong id="betDisplay">10</strong></div>
+
+          <!-- 🔥 IMPORTANTE -->
+          <div class="pill">🎯 Apuesta: <strong id="bet">100</strong></div>
         </div>
 
-    <div class="slot-grid">
-  <!-- 5 columnas x 3 filas -->
-  <!-- Reel 1 -->
-  <div class="reel"><img id="r0c0"></div>
-  <div class="reel"><img id="r0c1"></div>
-  <div class="reel"><img id="r0c2"></div>
+        <div class="slot-grid">
+          <div class="reel"><img id="r0c0"></div>
+          <div class="reel"><img id="r0c1"></div>
+          <div class="reel"><img id="r0c2"></div>
 
-  <!-- Reel 2 -->
-  <div class="reel"><img id="r1c0"></div>
-  <div class="reel"><img id="r1c1"></div>
-  <div class="reel"><img id="r1c2"></div>
+          <div class="reel"><img id="r1c0"></div>
+          <div class="reel"><img id="r1c1"></div>
+          <div class="reel"><img id="r1c2"></div>
 
-  <!-- Reel 3 -->
-  <div class="reel"><img id="r2c0"></div>
-  <div class="reel"><img id="r2c1"></div>
-  <div class="reel"><img id="r2c2"></div>
+          <div class="reel"><img id="r2c0"></div>
+          <div class="reel"><img id="r2c1"></div>
+          <div class="reel"><img id="r2c2"></div>
 
-  <!-- Reel 4 -->
-  <div class="reel"><img id="r3c0"></div>
-  <div class="reel"><img id="r3c1"></div>
-  <div class="reel"><img id="r3c2"></div>
+          <div class="reel"><img id="r3c0"></div>
+          <div class="reel"><img id="r3c1"></div>
+          <div class="reel"><img id="r3c2"></div>
 
-  <!-- Reel 5 -->
-  <div class="reel"><img id="r4c0"></div>
-  <div class="reel"><img id="r4c1"></div>
-  <div class="reel"><img id="r4c2"></div>
-</div>
+          <div class="reel"><img id="r4c0"></div>
+          <div class="reel"><img id="r4c1"></div>
+          <div class="reel"><img id="r4c2"></div>
+        </div>
 
         <div class="controls">
           <div class="bet-controls">
@@ -68,7 +64,10 @@
             <button type="button" onclick="changeBet(1000)">+1000</button>
           </div>
 
-          <button id="spinBtn" class="spin-btn" type="button" onclick="jugar()">🎰 GIRAR</button>
+          <!-- 🔥 IMPORTANTE -->
+          <button id="btnSpin" class="spin-btn" type="button" onclick="jugar()">
+            🎰 GIRAR
+          </button>
         </div>
 
         <div class="results">
