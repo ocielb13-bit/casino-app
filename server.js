@@ -292,21 +292,59 @@ app.post("/api/admin/users", authRequired, adminOnly, async (req, res) => {
 
 /* ================= SLOTS ================= */
 
-
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   const bet = toInt(req.body.amount);
   const user = await getUserById(req.user.id);
-  const settings = await getAllSettings();
 
   if (user.balance < bet) {
     return res.status(400).json({ error: "Saldo insuficiente" });
   }
 
-  const winChance = Math.random() * 100 < settings.win_rate;
+  const symbols = [
+    "coin.png",
+    "dragon.png",
+    "goldpot.png",
+    "jade.png",
+    "lantern.png",
+    "scatter.png",
+    "wild.png"
+  ];
+
+  // generar board 5x3
+  const board = [];
+  for (let col = 0; col < 5; col++) {
+    const column = [];
+    for (let row = 0; row < 3; row++) {
+      const rand = Math.floor(Math.random() * symbols.length);
+      column.push(symbols[rand]);
+    }
+    board.push(column);
+  }
+
+  // lógica simple de win
   let win = 0;
 
-  if (winChance) {
-    win = bet * settings.multiplier;
+  for (let row = 0; row < 3; row++) {
+    let first = board[0][row];
+    let count = 1;
+
+    for (let col = 1; col < 5; col++) {
+      if (board[col][row] === first || board[col][row] === "wild.png") {
+        count++;
+      } else break;
+    }
+
+    if (count >= 3) {
+      win += bet * count;
+    }
+  }
+
+  // scatter bonus
+  const scatterCount = board.flat().filter(s => s === "scatter.png").length;
+  let freeSpins = 0;
+
+  if (scatterCount >= 3) {
+    freeSpins = 5;
   }
 
   const newBalance = user.balance - bet + win;
@@ -315,8 +353,9 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
 
   res.json({
     success: true,
-    board: [["coin"]],
+    board,
     win,
+    freeSpins,
     balance: newBalance
   });
 });
