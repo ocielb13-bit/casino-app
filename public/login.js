@@ -2,19 +2,27 @@ console.log("LOGIN JS CARGADO");
 
 let loggingIn = false;
 
+function setLoginError(message) {
+  const errorText = document.getElementById("error");
+  if (errorText) errorText.textContent = message;
+}
+
 async function login() {
   if (loggingIn) return;
 
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const usernameEl = document.getElementById("username");
+  const passwordEl = document.getElementById("password");
   const errorText = document.getElementById("error");
 
+  const username = usernameEl ? usernameEl.value.trim() : "";
+  const password = passwordEl ? passwordEl.value.trim() : "";
+
   if (!username || !password) {
-    errorText.textContent = "Poné usuario y contraseña";
+    setLoginError("Poné usuario y contraseña");
     return;
   }
 
-  errorText.textContent = "Cargando...";
+  if (errorText) errorText.textContent = "Cargando...";
   loggingIn = true;
 
   try {
@@ -29,13 +37,13 @@ async function login() {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok || !data.success) {
-      errorText.textContent = data.error || "Error";
+      setLoginError(data.error || "Error");
       return;
     }
 
     localStorage.setItem("token", data.token);
-    localStorage.setItem("username", data.username);
-    localStorage.setItem("role", data.role);
+    localStorage.setItem("username", data.username || "");
+    localStorage.setItem("role", data.role || "");
 
     if (data.role === "admin") {
       window.location.href = "/admin.html";
@@ -43,12 +51,22 @@ async function login() {
       window.location.href = "/menu.html";
     }
   } catch {
-    errorText.textContent = "Error de conexión con el servidor";
+    setLoginError("Error de conexión con el servidor");
   } finally {
     loggingIn = false;
   }
 }
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") login();
+document.addEventListener("DOMContentLoaded", () => {
+  const passwordEl = document.getElementById("password");
+
+  passwordEl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") login();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && document.activeElement?.id !== "password") {
+      login();
+    }
+  });
 });
