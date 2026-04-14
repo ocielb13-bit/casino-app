@@ -1,83 +1,112 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Casino</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Casino Lobby</title>
   <link rel="stylesheet" href="/style.css">
 </head>
-
-<body>
+<body class="app-page">
   <div class="page">
+    <div class="lobby-shell">
 
-    <div class="card">
-
-      <!-- HEADER -->
-      <div class="user-top">
+      <div class="lobby-header">
         <div>
-          <h1>🎰 Casino</h1>
+          <div class="eyebrow">Casino virtual</div>
+          <h1 class="title">Lobby</h1>
           <p class="muted" id="playerLine">Cargando...</p>
         </div>
-        <button class="secondary" onclick="logout()">Cerrar sesión</button>
+
+        <div class="top-actions">
+          <div class="chip">💰 Saldo: <strong id="balanceLine">0</strong></div>
+          <button class="secondary" onclick="logout()">Cerrar sesión</button>
+        </div>
       </div>
 
-      <!-- KPIs -->
       <div class="kpi">
-        <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
+        <div class="pill">🌀 Free Spins: <strong id="freeLine">0</strong></div>
+        <div class="pill">🏦 Banco FS: <strong id="bankLine">0</strong></div>
+        <div class="pill">👤 Rol: <strong id="roleLine">player</strong></div>
         <div class="pill">🎮 Juegos: <strong>2</strong></div>
       </div>
 
-      <!-- JUEGOS -->
-      <div class="game-grid">
-
-        <a href="/slots.html" class="game-card">
-          <div class="game-icon">🐉</div>
-          <div class="game-name">Slots</div>
-          <div class="game-desc">Girá y ganá premios épicos</div>
-        </a>
-
-        <a href="/ruleta.html" class="game-card">
-          <div class="game-icon">🎡</div>
-          <div class="game-name">Ruleta</div>
-          <div class="game-desc">Elegí tu número y probá suerte</div>
-        </a>
-
+      <div class="lobby-hero">
+        <h2 style="margin-bottom: 6px;">Elegí un juego</h2>
+        <p>Interfaz tipo casino moderno, estilo limpio, rápida y lista para jugar desde el celular.</p>
       </div>
 
-    </div>
+      <div class="game-grid">
+        <a href="/slots.html" class="game-card game-card--slots">
+          <div class="game-card__art game-card__art--slots">🐉</div>
+          <div class="game-card__body">
+            <div class="game-card__meta">
+              <span class="game-badge">LIVE</span>
+              <span class="game-badge">HOT</span>
+            </div>
+            <h3 class="game-card__title">Asian Dragon Slots</h3>
+            <p class="game-card__subtitle">Reels · Bonos · Jackpot</p>
+          </div>
+        </a>
 
+        <a href="/ruleta.html" class="game-card game-card--roulette">
+          <div class="game-card__art game-card__art--roulette">🎡</div>
+          <div class="game-card__body">
+            <div class="game-card__meta">
+              <span class="game-badge">LIVE</span>
+              <span class="game-badge">TABLE</span>
+            </div>
+            <h3 class="game-card__title">Ruleta Pro</h3>
+            <p class="game-card__subtitle">Número · Apuestas · Historial</p>
+          </div>
+        </a>
+
+        <div class="game-card game-card--locked">
+          <div class="game-card__art game-card__art--soon">🂡</div>
+          <div class="game-card__body">
+            <div class="game-card__meta">
+              <span class="game-badge">SOON</span>
+            </div>
+            <h3 class="game-card__title">Blackjack</h3>
+            <p class="game-card__subtitle">Próximamente</p>
+          </div>
+        </div>
+
+        <div class="game-card game-card--locked">
+          <div class="game-card__art game-card__art--soon">🚀</div>
+          <div class="game-card__body">
+            <div class="game-card__meta">
+              <span class="game-badge">SOON</span>
+            </div>
+            <h3 class="game-card__title">Crash</h3>
+            <p class="game-card__subtitle">Próximamente</p>
+          </div>
+        </div>
+
+        <div class="game-card game-card--locked">
+          <div class="game-card__art game-card__art--soon">💣</div>
+          <div class="game-card__body">
+            <div class="game-card__meta">
+              <span class="game-badge">SOON</span>
+            </div>
+            <h3 class="game-card__title">Mines</h3>
+            <p class="game-card__subtitle">Próximamente</p>
+          </div>
+        </div>
+
+        <a href="/admin.html" class="game-card game-card--admin hidden" id="adminCard">
+          <div class="game-card__art game-card__art--soon">👑</div>
+          <div class="game-card__body">
+            <div class="game-card__meta">
+              <span class="game-badge">ADMIN</span>
+            </div>
+            <h3 class="game-card__title">Panel Admin</h3>
+            <p class="game-card__subtitle">Usuarios · Ajustes · Control</p>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 
-<script>
-async function api(path) {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(path, {
-    headers: { Authorization: "Bearer " + token }
-  });
-
-  if (!res.ok) {
-    localStorage.removeItem("token");
-    window.location.href = "/";
-    return;
-  }
-
-  return res.json();
-}
-
-async function loadMe() {
-  const me = await api("/api/me");
-  document.getElementById("playerLine").textContent = "Jugador: " + me.username;
-  document.getElementById("saldo").textContent = me.balance;
-}
-
-function logout() {
-  localStorage.removeItem("token");
-  window.location.href = "/";
-}
-
-loadMe();
-</script>
-
+  <script src="/menu.js"></script>
 </body>
 </html>
