@@ -3,105 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎰 Slots Asian Dragon</title>
-  <link rel="stylesheet" href="/style.css">
+  <title>Casino</title>
+  <meta http-equiv="refresh" content="0; url=/menu.html">
+  <script>
+    window.location.replace("/menu.html");
+  </script>
 </head>
-<body>
-  <div class="page">
-    <div class="card" style="max-width: 980px; margin: 10px auto; background: #111827;">
-
-      <!-- Header como en la imagen -->
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:#1f2937; border-radius:12px 12px 0 0;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <span style="font-size:32px;">🎰</span>
-          <h1 style="margin:0; color:#facc15; font-size:1.8rem;">Slots Asian Dragon</h1>
-        </div>
-        <button onclick="goToMenu()" class="secondary" style="padding:8px 20px;">Volver al Menú</button>
-      </div>
-
-      <!-- Info del jugador -->
-      <div style="display:flex; flex-wrap:wrap; gap:8px; padding:15px 20px; background:#1f2937; color:#e2e8f0;">
-        <div><strong>Usuario:</strong> <span id="username">Sheila</span></div>
-        <div><strong>Saldo:</strong> <span id="balance" style="color:#facc15;">1229</span></div>
-        <div><strong>Free Spins:</strong> <span id="freeSpins">0</span></div>
-        <div><strong>Banco FS:</strong> <span id="freeSpinBank">0</span></div>
-        <div><strong>RTP:</strong> 96%</div>
-        <div><strong>Jackpot:</strong> <span id="jackpot">1000</span></div>
-      </div>
-
-      <!-- Grid de 5 reels × 3 filas (exacto como querés) -->
-      <div id="slotGrid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; padding:30px 20px; background:#0f172a; border-radius:0 0 12px 12px;">
-        <!-- Se llena automáticamente con JavaScript -->
-      </div>
-
-      <!-- Apuesta y botón GIRAR -->
-      <div style="padding:20px; display:flex; justify-content:center; align-items:center; gap:20px; background:#1f2937;">
-        <div>
-          <label style="color:#e2e8f0;">Apuesta:</label>
-          <input id="betAmount" type="number" value="200" style="width:110px; text-align:center; background:#334155; color:white; border:none; border-radius:8px; padding:12px; font-size:1.3rem;">
-        </div>
-        
-        <button onclick="spin()" 
-                style="background:linear-gradient(90deg, #facc15, #eab308); color:#111827; font-size:1.5rem; padding:16px 80px; border:none; border-radius:9999px; font-weight:bold; box-shadow:0 0 20px #facc15;">
-          🔥 GIRAR
-        </button>
-      </div>
-
-      <div style="text-align:center; padding:10px; color:#f87171;" id="winMessage"></div>
-
-      <script src="/slots.js"></script>
-      <script>
-        let currentTheme = 'dragon';
-
-        async function loadPlayer() {
-          try {
-            const res = await fetch('/api/me', {
-              headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
-            });
-            const data = await res.json();
-            document.getElementById('username').textContent = data.username || 'Usuario';
-            document.getElementById('balance').textContent = data.balance || 0;
-            document.getElementById('freeSpins').textContent = data.free_spins || 0;
-            document.getElementById('freeSpinBank').textContent = data.free_spin_bank || 0;
-            document.getElementById('jackpot').textContent = data.jackpot_bank || 1000;
-          } catch(e) {}
-        }
-
-        function goToMenu() {
-          window.location.href = '/';
-        }
-
-        // Crear los 15 casilleros (5×3)
-        function createSlotGrid() {
-          const grid = document.getElementById('slotGrid');
-          grid.innerHTML = '';
-          for (let i = 0; i < 15; i++) {
-            const symbolDiv = document.createElement('div');
-            symbolDiv.className = 'reel-symbol-container';
-            symbolDiv.style.cssText = `
-              aspect-ratio: 1;
-              background: #1e2937;
-              border: 3px solid #facc15;
-              border-radius: 12px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 52px;
-              box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
-              overflow: hidden;
-            `;
-            symbolDiv.innerHTML = `<img src="/asset/symbol/asian/coin.png" style="width:85%; filter:drop-shadow(0 0 10px gold);">`;
-            grid.appendChild(symbolDiv);
-          }
-        }
-
-        window.onload = () => {
-          loadPlayer();
-          createSlotGrid();
-          initSlots();           // tu slots.js mejorado
-        };
-      </script>
-    </div>
-  </div>
-</body>
+<body></body>
 </html>
