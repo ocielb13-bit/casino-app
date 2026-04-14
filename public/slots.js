@@ -1,3 +1,19 @@
+const basePath = "/assets/symbols/asian/";
+
+const symbols = [
+  "coin.png",
+  "jade.png",
+  "lantern.png",
+  "goldpot.png",
+  "dragon.png",
+  "wild.png",
+  "scatter.png"
+];
+
+let saldoActual = 0;
+let currentBet = 10;
+let spinning = false;
+
 // ===== API =====
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -5,146 +21,98 @@ async function api(path, options = {}) {
   const res = await fetch(path, {
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: "Bearer " + token } : {}),
-      ...(options.headers || {})
+      ...(token ? { Authorization: "Bearer " + token } : {})
     },
     ...options
   });
 
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      console.warn("Token inválido");
-      localStorage.removeItem("token");
-      window.location.href = "/";
-      return;
-    }
-    throw new Error(data.error || "Error");
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+    return;
   }
 
-  return data;
+  return res.json();
 }
 
-// ===== CONFIG =====
-const basePath = "/assets/symbols/asian/";
-
-const weights = {
-  "coin.png": 30,
-  "jade.png": 25,
-  "lantern.png": 20,
-  "goldpot.png": 10,
-  "dragon.png": 8,
-  "wild.png": 5,
-  "scatter.png": 2
-};
-
-// ===== STATE =====
-let saldoActual = 0;
-let freeSpins = 0;
-let freeBank = 0;
-let jackpotBank = 1000;
-let currentBet = 10;
-let winRate = 30;
-let spinning = false;
-
-// ===== HELPERS =====
-function setText(id, value) {
+// ===== UI =====
+function setText(id, val) {
   const el = document.getElementById(id);
-  if (el) el.textContent = value;
+  if (el) el.textContent = val;
 }
 
-function updateUI() {
-  setText("saldo", saldoActual);
-  setText("betDisplay", currentBet);
-  setText("freeLine", freeSpins);
-  setText("bankLine", freeBank);
-  setText("jackpotLine", jackpotBank);
-  setText("rtpLine", winRate);
-}
-
-// ===== RANDOM CON PESO =====
-function weightedRandom() {
-  const entries = Object.entries(weights);
-  const total = entries.reduce((sum, [_, w]) => sum + w, 0);
-
-  let rand = Math.random() * total;
-
-  for (const [symbol, weight] of entries) {
-    if (rand < weight) return symbol;
-    rand -= weight;
-  }
-
-  return "coin.png";
-}
-
-// ===== RENDER =====
-function setImage(col, row, symbol) {
-  const img = document.getElementById(`img-c${col}_${row}`);
-  if (img) {
-    img.src = basePath + symbol;
-  }
-}
-
-function renderRandomGrid() {
-  for (let c = 1; c <= 3; c++) {
-    for (let r = 0; r < 5; r++) {
-      setImage(c, r, weightedRandom());
+// ===== GRID =====
+function setGrid(board) {
+  for (let col = 0; col < 5; col++) {
+    for (let row = 0; row < 3; row++) {
+      const img = document.getElementById(`r${col}c${row}`);
+      if (img) {
+        img.src = basePath + board[col][row];
+      }
     }
   }
 }
 
-// ===== ANIMACIÓN =====
-function spinAnimation() {
-  return new Promise((resolve) => {
-    let cycles = 0;
-
-    const interval = setInterval(() => {
-      renderRandomGrid();
-      cycles++;
-
-      if (cycles > 15) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 70);
-  });
+// ===== RANDOM GRID =====
+function randomBoard() {
+  return Array.from({ length: 5 }, () =>
+    Array.from({ length: 3 }, () =>
+      symbols[Math.floor(Math.random() * symbols.length)]
+    )
+  );
 }
 
-// ===== APUESTA =====
-function changeBet(amount) {
-  currentBet += amount;
+// ===== ANIMACION REAL =====
+async function spinVisual(finalBoard) {
+  const reels = 5;
 
-  if (currentBet < 1) currentBet = 1;
-  if (currentBet > saldoActual) currentBet = saldoActual;
+  for (let i = 0; i < reels; i++) {
+    await new Promise(resolve => {
+      let speed = 50;
+      let cycles = 0;
 
-  updateUI();
-}
+      const interval = setInterval(() => {
+        const tempBoard = randomBoard();
+        setGrid(tempBoard);
 
-// ===== LOAD =====
-async function loadSession() {
-  try {
-    const me = await api("/api/me");
-    if (!me) return;
+        speed *= 1.05;
+        cycles++;
 
-    saldoActual = Number(me.balance || 0);
-    freeSpins = Number(me.free_spins || 0);
-    freeBank = Number(me.free_spin_bank || 0);
+        if (cycles > 10 + i * 5) {
+          clearInterval(interval);
 
-    const info = await api("/api/game-info");
-    if (!info) return;
+          // STOP con resultado real
+          for (let r = 0; r < 3; r++) {
+            document.getElementById(`r${i}c${r}`).src =
+              basePath + finalBoard[i][r];
+          }
 
-    jackpotBank = Number(info.jackpot_bank || 1000);
-    winRate = Number(info.win_rate || 30);
-
-    setText("playerLine", me.username);
-
-    updateUI();
-    renderRandomGrid();
-
-  } catch (err) {
-    console.error(err);
+          resolve();
+        }
+      }, speed);
+    });
   }
+}
+
+// ===== WIN CHECK SIMPLE =====
+function checkWin(board) {
+  let win = 0;
+
+  for (let row = 0; row < 3; row++) {
+    let first = board[0][row];
+    let count = 1;
+
+    for (let col = 1; col < 5; col++) {
+      if (board[col][row] === first) count++;
+      else break;
+    }
+
+    if (count >= 3) {
+      win += currentBet * count;
+    }
+  }
+
+  return win;
 }
 
 // ===== SPIN =====
@@ -153,51 +121,53 @@ async function jugar() {
   spinning = true;
 
   try {
-    await spinAnimation();
-
     const res = await api("/api/slots/spin", {
       method: "POST",
       body: JSON.stringify({ amount: currentBet })
     });
 
-    if (!res) return;
-
     saldoActual = res.balance;
-    freeSpins = res.freeSpins;
-    freeBank = res.freeSpinBank;
-    jackpotBank = res.jackpotBank;
+    setText("saldo", saldoActual);
 
-    updateUI();
+    const board = randomBoard(); // ⚠️ temporal (hasta que backend lo devuelva real)
 
-    // Resultado visual final
-    renderRandomGrid();
+    await spinVisual(board);
 
-    setText(
-      "resultado",
-      res.win > 0 ? `🔥 Ganaste ${res.win}` : "❌ Perdiste"
-    );
+    const win = checkWin(board);
 
-    // ===== EFECTO GANAR =====
-    if (res.win > 0) {
-      document.querySelectorAll(".reel img").forEach(img => {
-        img.style.transform = "scale(1.2)";
-        img.style.filter = "brightness(1.5)";
+    const resultEl = document.getElementById("resultado");
+
+    if (win > 0) {
+      resultEl.textContent = `🔥 Ganaste ${win}`;
+      resultEl.className = "win";
+
+      document.querySelectorAll(".reel").forEach(el => {
+        el.classList.add("win-high");
       });
 
       setTimeout(() => {
-        document.querySelectorAll(".reel img").forEach(img => {
-          img.style.transform = "scale(1)";
-          img.style.filter = "none";
+        document.querySelectorAll(".reel").forEach(el => {
+          el.classList.remove("win-high");
         });
-      }, 500);
+      }, 800);
+
+    } else {
+      resultEl.textContent = "❌ Perdiste";
+      resultEl.className = "lose";
     }
 
-  } catch (err) {
-    console.error(err);
-  } finally {
-    spinning = false;
+  } catch (e) {
+    console.error(e);
   }
+
+  spinning = false;
 }
 
 // ===== INIT =====
-document.addEventListener("DOMContentLoaded", loadSession);
+document.addEventListener("DOMContentLoaded", async () => {
+  const me = await api("/api/me");
+  saldoActual = me.balance;
+  setText("saldo", saldoActual);
+
+  setGrid(randomBoard());
+});
