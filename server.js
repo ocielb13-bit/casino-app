@@ -239,6 +239,57 @@ app.put("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
   res.json(await getAllSettings());
 });
 
+
+/* ================= ADMIN USERS ================= */
+
+// Obtener todos los usuarios
+app.get("/api/admin/users", authRequired, adminOnly, async (req, res) => {
+  const { data, error } = await supabase
+    .from("app_users")
+    .select("id, username, role, balance")
+    .order("id", { ascending: true });
+
+  if (error) {
+    return res.status(500).json({ error: "Error cargando usuarios" });
+  }
+
+  res.json({ users: data });
+});
+
+
+// Crear usuario
+app.post("/api/admin/users", authRequired, adminOnly, async (req, res) => {
+  const { username, password, balance, role } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Faltan datos" });
+  }
+
+  // Verificar si ya existe
+  const existing = await getUserByUsername(username);
+  if (existing) {
+    return res.status(400).json({ error: "Usuario ya existe" });
+  }
+
+  const hashed = await bcrypt.hash(password, 10);
+
+  const { error } = await supabase.from("app_users").insert({
+    username,
+    password: hashed,
+    role: role || "player",
+    balance: balance || 0
+  });
+
+  if (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Error creando usuario" });
+  }
+
+  res.json({ success: true });
+});
+
+
+
 /* ================= SLOTS ================= */
 
 app.post("/api/slots/spin", authRequired, async (req, res) => {
