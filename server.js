@@ -292,6 +292,7 @@ app.post("/api/admin/users", authRequired, adminOnly, async (req, res) => {
 
 /* ================= SLOTS ================= */
 
+
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   const bet = toInt(req.body.amount);
   const user = await getUserById(req.user.id);
@@ -319,7 +320,6 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
     balance: newBalance
   });
 });
-
 /* ================= START ================= */
 
 async function start() {
