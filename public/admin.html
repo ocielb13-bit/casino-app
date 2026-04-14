@@ -6,87 +6,99 @@
   <title>Admin Pro</title>
   <link rel="stylesheet" href="/style.css">
 </head>
+
 <body class="app-page">
-  <div class="page">
-    <div class="admin-shell">
 
-      <div class="admin-top">
-        <div>
-          <div class="eyebrow">Administración</div>
-          <h1 class="title">👑 Panel Admin</h1>
-          <p class="muted" id="adminLine">Cargando...</p>
-        </div>
+<script>
+  // 🔒 PROTECCIÓN INMEDIATA
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "/";
+  }
+</script>
 
-        <div class="top-actions">
-          <button type="button" class="secondary" onclick="goCasino()">Ir al casino</button>
-          <button type="button" class="secondary" onclick="logout()">Salir</button>
-        </div>
+<div class="page">
+  <div class="admin-shell">
+
+    <div class="admin-top">
+      <div>
+        <div class="eyebrow">Administración</div>
+        <h1 class="title">👑 Panel Admin</h1>
+        <p class="muted" id="adminLine">Cargando...</p>
       </div>
 
-      <div class="kpi">
-        <div class="pill">Win rate: <strong id="currentWinRate">30</strong>%</div>
-        <div class="pill">Multiplicador: <strong id="currentMultiplier">2</strong></div>
-        <div class="pill">Jackpot: <strong id="currentJackpot">1000</strong></div>
-        <div class="pill">Saldo base: <strong id="currentDefaultBalance">1000</strong></div>
-        <div class="pill">Free award: <strong id="currentFreeAward">5</strong></div>
+      <div class="top-actions">
+        <button class="secondary" onclick="goCasino()">Ir al casino</button>
+        <button class="secondary" onclick="logout()">Salir</button>
       </div>
-
-      <div class="lobby-hero">
-        <h2 style="margin-bottom: 6px;">Configuración global</h2>
-        <p>Los ajustes ahora se guardan en un archivo local del server. No hace falta `game_settings` en Supabase.</p>
-      </div>
-
-      <div class="form-grid" style="margin-top: 14px;">
-        <input id="win_rate" type="number" step="0.1" min="1" max="99.9" placeholder="Win rate">
-        <input id="multiplier" type="number" step="0.1" min="1" placeholder="Multiplicador">
-        <input id="jackpot_bank" type="number" min="1000" placeholder="Jackpot">
-        <input id="default_balance" type="number" min="0" placeholder="Saldo base">
-      </div>
-
-      <div class="form-grid">
-        <input id="slot_pay_3" type="number" min="0" placeholder="Pago 3 iguales">
-        <input id="slot_pay_4" type="number" min="0" placeholder="Pago 4 iguales">
-        <input id="slot_pay_5" type="number" min="0" placeholder="Pago 5 iguales">
-        <input id="roulette_payout" type="number" min="1" placeholder="Pago ruleta">
-        <input id="free_spin_award" type="number" min="0" placeholder="Free spins bonus">
-      </div>
-
-      <div class="form-actions" style="margin-top: 8px;">
-        <button type="button" class="primary" onclick="saveSettings()">Guardar ajustes</button>
-        <button type="button" class="secondary" onclick="reloadAll()">Actualizar</button>
-      </div>
-
-      <div class="lobby-hero" style="margin-top: 18px;">
-        <h2 style="margin-bottom: 6px;">Crear usuario</h2>
-        <p>El server crea el hash con bcrypt automáticamente.</p>
-      </div>
-
-      <div class="form-grid" style="margin-top: 14px;">
-        <input id="newUser" placeholder="Usuario nuevo">
-        <input id="newPass" type="password" placeholder="Contraseña">
-        <input id="newBalance" type="number" placeholder="Saldo inicial">
-        <select id="newRole">
-          <option value="player">Player</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="primary" onclick="createUser()">Crear usuario</button>
-      </div>
-
-      <div class="lobby-hero" style="margin-top: 18px;">
-        <h2 style="margin-bottom: 6px;">Usuarios</h2>
-        <p>Balance, rol y spins guardados en `app_users`.</p>
-      </div>
-
-      <div id="usersList" class="user-list"></div>
-
-      <p id="msg" class="small" style="margin-top: 14px;"></p>
-
     </div>
-  </div>
 
-  <script src="/admin.js"></script>
+    <!-- KPI -->
+    <div class="kpi">
+      <div class="pill">Win rate: <strong id="currentWinRate">0</strong>%</div>
+      <div class="pill">Multiplicador: <strong id="currentMultiplier">0</strong></div>
+      <div class="pill">Jackpot: <strong id="currentJackpot">0</strong></div>
+      <div class="pill">Saldo base: <strong id="currentDefaultBalance">0</strong></div>
+      <div class="pill">Free award: <strong id="currentFreeAward">0</strong></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="lobby-hero">
+      <h2>Configuración global</h2>
+      <p>Los valores se guardan en Supabase.</p>
+    </div>
+
+    <div class="form-grid">
+      <input id="win_rate" type="number" placeholder="Win rate">
+      <input id="multiplier" type="number" placeholder="Multiplicador">
+      <input id="jackpot_bank" type="number" placeholder="Jackpot">
+      <input id="default_balance" type="number" placeholder="Saldo base">
+    </div>
+
+    <div class="form-grid">
+      <input id="slot_pay_3" type="number" placeholder="Pago 3">
+      <input id="slot_pay_4" type="number" placeholder="Pago 4">
+      <input id="slot_pay_5" type="number" placeholder="Pago 5">
+      <input id="roulette_payout" type="number" placeholder="Ruleta">
+      <input id="free_spin_award" type="number" placeholder="Free spins">
+    </div>
+
+    <div class="form-actions">
+      <button class="primary" onclick="saveSettings()">💾 Guardar ajustes</button>
+      <button class="secondary" onclick="reloadAll()">🔄 Recargar</button>
+    </div>
+
+    <!-- CREAR USUARIO -->
+    <div class="lobby-hero">
+      <h2>Crear usuario</h2>
+    </div>
+
+    <div class="form-grid">
+      <input id="newUser" placeholder="Usuario">
+      <input id="newPass" type="password" placeholder="Contraseña">
+      <input id="newBalance" type="number" placeholder="Saldo inicial">
+      <select id="newRole">
+        <option value="player">Player</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button class="primary" onclick="createUser()">➕ Crear usuario</button>
+    </div>
+
+    <!-- LISTA -->
+    <div class="lobby-hero">
+      <h2>Usuarios</h2>
+    </div>
+
+    <div id="usersList" class="user-list"></div>
+
+    <p id="msg" class="small"></p>
+
+  </div>
+</div>
+
+<script src="/admin.js"></script>
 </body>
 </html>
