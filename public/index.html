@@ -6,17 +6,18 @@
   <title>Casino Login</title>
   <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body class="auth-page">
   <div class="page">
-    <div class="card" style="max-width: 460px;">
-      <h1>🎰 Casino Login</h1>
+    <div class="card auth-card">
+      <div class="eyebrow">Casino virtual</div>
+      <h1 class="title">Entrar</h1>
       <p class="muted">Ingresá con tu usuario y contraseña.</p>
 
       <input id="username" placeholder="Usuario" autocomplete="username">
       <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
 
-      <button type="button" onclick="login()">Entrar</button>
-      <p id="error" class="muted"></p>
+      <button type="button" class="primary" onclick="login()">Entrar</button>
+      <p id="error" class="small"></p>
     </div>
   </div>
 
