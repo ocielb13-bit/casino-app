@@ -11,7 +11,17 @@ async function api(path, options = {}) {
   });
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Error");
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      console.warn("Token inválido");
+      localStorage.removeItem("token");
+      window.location.href = "/";
+      return;
+    }
+    throw new Error(data.error || "Error");
+  }
+
   return data;
 }
 
@@ -28,6 +38,7 @@ function clampInt(value, min, max) {
 async function loadMe() {
   try {
     const me = await api("/api/me");
+    if (!me) return;
 
     setText("playerLine", `Jugador: ${me.username}`);
     setText("balanceLine", me.balance);
@@ -39,9 +50,8 @@ async function loadMe() {
       const adminCard = document.getElementById("adminCard");
       if (adminCard) adminCard.classList.remove("hidden");
     }
-  } catch {
-    localStorage.removeItem("token");
-    window.location.href = "/";
+  } catch (err) {
+    console.error(err);
   }
 }
 
