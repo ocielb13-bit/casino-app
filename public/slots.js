@@ -11,7 +11,7 @@ const symbols = [
 ];
 
 let saldoActual = 0;
-let currentBet = 10;
+let currentBet = 100;
 let spinning = false;
 
 // ===== API =====
@@ -46,14 +46,12 @@ function setGrid(board) {
   for (let col = 0; col < 5; col++) {
     for (let row = 0; row < 3; row++) {
       const img = document.getElementById(`r${col}c${row}`);
-      if (img) {
-        img.src = basePath + board[col][row];
-      }
+      if (img) img.src = basePath + board[col][row];
     }
   }
 }
 
-// ===== RANDOM GRID =====
+// ===== RANDOM =====
 function randomBoard() {
   return Array.from({ length: 5 }, () =>
     Array.from({ length: 3 }, () =>
@@ -62,29 +60,36 @@ function randomBoard() {
   );
 }
 
-// ===== ANIMACION REAL =====
-async function spinVisual(finalBoard) {
-  const reels = 5;
+// ===== BOTONES APUESTA =====
+function changeBet(amount) {
+  currentBet += amount;
 
-  for (let i = 0; i < reels; i++) {
+  if (currentBet < 10) currentBet = 10;
+  if (currentBet > 10000) currentBet = 10000;
+
+  setText("bet", currentBet);
+}
+
+// ===== ANIMACIÓN PRO =====
+async function spinVisual(finalBoard) {
+  for (let col = 0; col < 5; col++) {
     await new Promise(resolve => {
       let speed = 50;
       let cycles = 0;
 
       const interval = setInterval(() => {
-        const tempBoard = randomBoard();
-        setGrid(tempBoard);
+        const temp = randomBoard();
+        setGrid(temp);
 
-        speed *= 1.05;
+        speed *= 1.08;
         cycles++;
 
-        if (cycles > 10 + i * 5) {
+        if (cycles > 12 + col * 5) {
           clearInterval(interval);
 
-          // STOP con resultado real
-          for (let r = 0; r < 3; r++) {
-            document.getElementById(`r${i}c${r}`).src =
-              basePath + finalBoard[i][r];
+          for (let row = 0; row < 3; row++) {
+            document.getElementById(`r${col}c${row}`).src =
+              basePath + finalBoard[col][row];
           }
 
           resolve();
@@ -94,9 +99,13 @@ async function spinVisual(finalBoard) {
   }
 }
 
-// ===== WIN CHECK SIMPLE =====
+// ===== WIN + LINEAS =====
 function checkWin(board) {
-  let win = 0;
+  let totalWin = 0;
+
+  document.querySelectorAll(".reel").forEach(el =>
+    el.classList.remove("win-line")
+  );
 
   for (let row = 0; row < 3; row++) {
     let first = board[0][row];
@@ -108,11 +117,33 @@ function checkWin(board) {
     }
 
     if (count >= 3) {
-      win += currentBet * count;
+      totalWin += currentBet * count;
+
+      // iluminar línea
+      for (let col = 0; col < count; col++) {
+        document
+          .getElementById(`r${col}c${row}`)
+          .parentElement.classList.add("win-line");
+      }
     }
   }
 
-  return win;
+  return totalWin;
+}
+
+// ===== EFECTO MONEDAS 💰 =====
+function coinEffect() {
+  for (let i = 0; i < 15; i++) {
+    const coin = document.createElement("div");
+    coin.className = "coin";
+    coin.textContent = "💰";
+
+    coin.style.left = Math.random() * 100 + "%";
+
+    document.body.appendChild(coin);
+
+    setTimeout(() => coin.remove(), 1000);
+  }
 }
 
 // ===== SPIN =====
@@ -129,31 +160,23 @@ async function jugar() {
     saldoActual = res.balance;
     setText("saldo", saldoActual);
 
-    const board = randomBoard(); // ⚠️ temporal (hasta que backend lo devuelva real)
+    const board = randomBoard();
 
     await spinVisual(board);
 
     const win = checkWin(board);
 
-    const resultEl = document.getElementById("resultado");
+    const result = document.getElementById("resultado");
 
     if (win > 0) {
-      resultEl.textContent = `🔥 Ganaste ${win}`;
-      resultEl.className = "win";
+      result.textContent = `🔥 Ganaste ${win}`;
+      result.className = "win";
 
-      document.querySelectorAll(".reel").forEach(el => {
-        el.classList.add("win-high");
-      });
-
-      setTimeout(() => {
-        document.querySelectorAll(".reel").forEach(el => {
-          el.classList.remove("win-high");
-        });
-      }, 800);
+      coinEffect();
 
     } else {
-      resultEl.textContent = "❌ Perdiste";
-      resultEl.className = "lose";
+      result.textContent = "❌ Perdiste";
+      result.className = "lose";
     }
 
   } catch (e) {
@@ -166,8 +189,15 @@ async function jugar() {
 // ===== INIT =====
 document.addEventListener("DOMContentLoaded", async () => {
   const me = await api("/api/me");
+
   saldoActual = me.balance;
   setText("saldo", saldoActual);
+  setText("bet", currentBet);
 
   setGrid(randomBoard());
+
+  // botones
+  window.mas100 = () => changeBet(100);
+  window.menos100 = () => changeBet(-100);
+  window.spin = jugar;
 });
