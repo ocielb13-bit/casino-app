@@ -143,27 +143,59 @@ app.put("/api/admin/user/:id/balance", authRequired, adminOnly, async (req, res)
   res.json({ success: true });
 });
 
-/* ================= SLOTS PRO ================= */
+/* ================= SLOTS PRO REAL ================= */
+
+let casinoBank = 100000; // banco del casino (se puede persistir luego)
+
+function getVolatilityMultiplier(volatility) {
+  if (volatility === "high") return 3;
+  if (volatility === "medium") return 2;
+  return 1;
+}
 
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   const bet = Number(req.body.amount);
   const user = await getUserById(req.user.id);
   const settings = await getSettings();
 
+  if (user.balance < bet) {
+    return res.status(400).json({ error: "Saldo insuficiente" });
+  }
+
+  const volatility = settings.volatility || "medium";
+  const rtp = settings.rtp || 90;
+
+  const volMulti = getVolatilityMultiplier(volatility);
+
+  // 🎯 control RTP real
+  const shouldPay = Math.random() * 100 < rtp;
+
   let win = 0;
 
-  // 🎯 control de winrate
-  const chance = Math.random() * 100;
+  if (shouldPay && casinoBank > bet) {
+    const rand = Math.random();
 
-  if (chance < settings.win_rate) {
-    win = bet * settings.slot_pay_3;
+    if (rand < 0.6) win = bet * settings.slot_pay_3;
+    else if (rand < 0.9) win = bet * settings.slot_pay_4;
+    else win = bet * settings.slot_pay_5 * volMulti;
+
+    // evitar quiebra del casino
+    if (win > casinoBank) win = 0;
   }
+
+  // actualizar banco
+  casinoBank += bet - win;
 
   const newBalance = user.balance - bet + win;
 
   await saveUser(user.id, { balance: newBalance });
 
-  res.json({ win, balance: newBalance });
+  res.json({
+    win,
+    balance: newBalance,
+    bank: casinoBank,
+    volatility
+  });
 });
 
 /* ================= START ================= */
