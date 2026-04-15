@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS = {
   roulette_payout: 35,
   free_spin_award: 5,
   default_balance: 1000
+  volatility: "medium"
 };
 
 async function getSettings() {
