@@ -36,21 +36,29 @@ async function login() {
 
     const data = await res.json().catch(() => ({}));
 
-    if (!res.ok || !data.success) {
-      setLoginError(data.error || "Error");
+    // 🔥 DEBUG (muy importante si algo falla)
+    console.log("LOGIN RESPONSE:", res.status, data);
+
+    // ✅ VALIDACIÓN CORRECTA
+    if (!res.ok) {
+      setLoginError(data.error || "Error al iniciar sesión");
       return;
     }
 
+    // ✅ GUARDAR SESIÓN
     localStorage.setItem("token", data.token);
     localStorage.setItem("username", data.username || "");
     localStorage.setItem("role", data.role || "");
 
+    // ✅ REDIRECCIÓN
     if (data.role === "admin") {
       window.location.href = "/admin.html";
     } else {
       window.location.href = "/menu.html";
     }
-  } catch {
+
+  } catch (err) {
+    console.error("ERROR LOGIN:", err);
     setLoginError("Error de conexión con el servidor");
   } finally {
     loggingIn = false;
