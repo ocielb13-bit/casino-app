@@ -16,10 +16,6 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
-// 👑 ADMIN AUTO
-const BOOTSTRAP_ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const BOOTSTRAP_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1234";
-
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE
@@ -28,36 +24,50 @@ const supabase = createClient(
 const publicDir = path.join(__dirname, "public");
 app.use(express.static(publicDir));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicDir, "index.html"));
-});
+/* ================= SETTINGS ================= */
 
-/* ================= HELPERS ================= */
+const DEFAULT_SETTINGS = {
+  win_rate: 30,
+  rtp: 90,
+  slot_pay_3: 2,
+  slot_pay_4: 5,
+  slot_pay_5: 10,
+  roulette_winrate: 48,
+  roulette_payout: 35,
+  free_spin_award: 5,
+  default_balance: 1000
+};
 
-function toInt(v) {
-  return Math.floor(Number(v) || 0);
+async function getSettings() {
+  const { data } = await supabase.from("game_settings").select("*");
+  const s = { ...DEFAULT_SETTINGS };
+
+  (data || []).forEach(row => {
+    s[row.key] = Number(row.value);
+  });
+
+  return s;
+}
+
+async function saveSettings(values) {
+  const rows = Object.entries(values).map(([key, value]) => ({
+    key,
+    value: String(value)
+  }));
+
+  await supabase.from("game_settings").upsert(rows, { onConflict: "key" });
 }
 
 /* ================= USERS ================= */
 
 async function getUserById(id) {
-  const { data } = await supabase
-    .from("app_users")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  return data || null;
+  const { data } = await supabase.from("app_users").select("*").eq("id", id).maybeSingle();
+  return data;
 }
 
 async function getUserByUsername(username) {
-  const { data } = await supabase
-    .from("app_users")
-    .select("*")
-    .eq("username", username)
-    .maybeSingle();
-
-  return data || null;
+  const { data } = await supabase.from("app_users").select("*").eq("username", username).maybeSingle();
+  return data;
 }
 
 async function saveUser(id, data) {
@@ -67,21 +77,7 @@ async function saveUser(id, data) {
 /* ================= AUTH ================= */
 
 function issueToken(user) {
-  return jwt.sign(
-    { id: user.id, role: user.role },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-}
-
-async function passwordMatches(plain, stored) {
-  if (!stored) return false;
-
-  if (stored.startsWith("$2")) {
-    return await bcrypt.compare(plain, stored);
-  }
-
-  return plain === stored;
+  return jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 }
 
 async function authRequired(req, res, next) {
@@ -91,9 +87,6 @@ async function authRequired(req, res, next) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     const user = await getUserById(payload.id);
-
-    if (!user) return res.status(401).json({ error: "Sesión inválida" });
-
     req.user = user;
     next();
   } catch {
@@ -102,153 +95,79 @@ async function authRequired(req, res, next) {
 }
 
 function adminOnly(req, res, next) {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ error: "Solo admin" });
-  }
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Solo admin" });
   next();
 }
 
 /* ================= LOGIN ================= */
 
 app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
+  const user = await getUserByUsername(req.body.username);
+  if (!user) return res.status(400).json({ error: "No existe" });
 
-  const user = await getUserByUsername(username);
-
-  if (!user) {
-    return res.status(400).json({ error: "Usuario no existe" });
-  }
-
-  const valid = await passwordMatches(password, user.password);
-
-  if (!valid) {
-    return res.status(400).json({ error: "Contraseña incorrecta" });
-  }
-
-  const token = issueToken(user);
+  const ok = await bcrypt.compare(req.body.password, user.password);
+  if (!ok) return res.status(400).json({ error: "Wrong pass" });
 
   res.json({
-    success: true,
-    token,
+    token: issueToken(user),
     username: user.username,
     role: user.role,
     balance: user.balance
   });
 });
 
-/* ================= ADMIN AUTO ================= */
+app.get("/api/me", authRequired, (req, res) => {
+  res.json(req.user);
+});
 
-async function ensureBootstrapAdmin() {
-  const admin = await getUserByUsername(BOOTSTRAP_ADMIN_USERNAME);
-  const hashed = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
+/* ================= ADMIN ================= */
 
-  if (!admin) {
-    await supabase.from("app_users").insert({
-      username: BOOTSTRAP_ADMIN_USERNAME,
-      password: hashed,
-      role: "admin",
-      balance: 100000
-    });
-    console.log("👑 Admin creado");
-    return;
-  }
+app.get("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
+  res.json(await getSettings());
+});
 
-  const ok = await passwordMatches(BOOTSTRAP_ADMIN_PASSWORD, admin.password);
+app.put("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
+  await saveSettings(req.body);
+  res.json(await getSettings());
+});
 
-  if (!ok || admin.role !== "admin") {
-    await saveUser(admin.id, {
-      password: hashed,
-      role: "admin"
-    });
-    console.log("🔧 Admin reparado");
-  }
-}
+app.get("/api/admin/users", authRequired, adminOnly, async (req, res) => {
+  const { data } = await supabase.from("app_users").select("id,username,role,balance");
+  res.json({ users: data });
+});
 
-/* ================= SLOTS ================= */
+app.put("/api/admin/user/:id/balance", authRequired, adminOnly, async (req, res) => {
+  const user = await getUserById(req.params.id);
+  let newBalance = Number(req.body.amount);
+  await saveUser(user.id, { balance: newBalance });
+  res.json({ success: true });
+});
+
+/* ================= SLOTS PRO ================= */
 
 app.post("/api/slots/spin", authRequired, async (req, res) => {
-  const bet = toInt(req.body.amount);
+  const bet = Number(req.body.amount);
   const user = await getUserById(req.user.id);
-
-  let freeSpins = user.freeSpins || 0;
-  const isFreeSpin = freeSpins > 0;
-
-  if (!isFreeSpin && user.balance < bet) {
-    return res.status(400).json({ error: "Saldo insuficiente" });
-  }
-
-  const symbols = [
-    "coin.png",
-    "dragon.png",
-    "goldpot.png",
-    "jade.png",
-    "lantern.png",
-    "scatter.png",
-    "wild.png"
-  ];
-
-  const board = [];
-
-  for (let col = 0; col < 5; col++) {
-    const column = [];
-    for (let row = 0; row < 3; row++) {
-      column.push(symbols[Math.floor(Math.random() * symbols.length)]);
-    }
-    board.push(column);
-  }
+  const settings = await getSettings();
 
   let win = 0;
 
-  for (let row = 0; row < 3; row++) {
-    let first = board[0][row];
-    let count = 1;
+  // 🎯 control de winrate
+  const chance = Math.random() * 100;
 
-    for (let col = 1; col < 5; col++) {
-      if (board[col][row] === first || board[col][row] === "wild.png") {
-        count++;
-      } else break;
-    }
-
-    if (count >= 3) {
-      win += bet * count;
-    }
+  if (chance < settings.win_rate) {
+    win = bet * settings.slot_pay_3;
   }
 
-  const scatterCount = board.flat().filter(s => s === "scatter.png").length;
+  const newBalance = user.balance - bet + win;
 
-  if (scatterCount >= 3) {
-    freeSpins += 5;
-  }
+  await saveUser(user.id, { balance: newBalance });
 
-  if (isFreeSpin) freeSpins--;
-
-  const newBalance = isFreeSpin
-    ? user.balance + win
-    : user.balance - bet + win;
-
-  await saveUser(user.id, {
-    balance: newBalance,
-    freeSpins
-  });
-
-  res.json({
-    success: true,
-    board,
-    win,
-    freeSpins,
-    balance: newBalance,
-    isFreeSpin
-  });
+  res.json({ win, balance: newBalance });
 });
 
 /* ================= START ================= */
 
-async function start() {
-  await ensureBootstrapAdmin();
-
-  app.listen(PORT, () => {
-    console.log("🎰 Casino PRO corriendo en puerto " + PORT);
-  });
-}
-
-start();
+app.listen(PORT, () => {
+  console.log("🔥 Casino PRO corriendo");
+});
