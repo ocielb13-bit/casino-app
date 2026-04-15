@@ -35,7 +35,7 @@ const DEFAULT_SETTINGS = {
   roulette_winrate: 48,
   roulette_payout: 35,
   free_spin_award: 5,
-  default_balance: 1000
+  default_balance: 1000,
   volatility: "medium"
 };
 
