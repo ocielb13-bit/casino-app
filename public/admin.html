@@ -1,95 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Pro</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <title>Admin PRO</title>
 </head>
+<body>
 
-<body class="app-page">
+<h1>👑 ADMIN PRO</h1>
 
-<div class="page">
-  <div class="admin-shell">
+<h2>⚙️ Settings</h2>
 
-    <div class="admin-top">
-      <div>
-        <div class="eyebrow">Administración</div>
-        <h1 class="title">👑 Panel Admin</h1>
-        <p class="muted" id="adminLine">Cargando...</p>
-      </div>
+<input id="win_rate" placeholder="Winrate %">
+<input id="rtp" placeholder="RTP">
+<input id="roulette_winrate" placeholder="Ruleta %">
+<input id="roulette_payout" placeholder="Pago ruleta">
+<input id="slot_pay_3" placeholder="x3">
+<input id="slot_pay_4" placeholder="x4">
+<input id="slot_pay_5" placeholder="x5">
 
-      <div class="top-actions">
-        <button class="secondary" onclick="goCasino()">Ir al casino</button>
-        <button class="secondary" onclick="logout()">Salir</button>
-      </div>
-    </div>
+<button onclick="saveSettings()">Guardar</button>
 
-    <!-- KPI -->
-    <div class="kpi">
-      <div class="pill">Win rate: <strong id="currentWinRate">0</strong>%</div>
-      <div class="pill">Multiplicador: <strong id="currentMultiplier">0</strong></div>
-      <div class="pill">Jackpot: <strong id="currentJackpot">0</strong></div>
-      <div class="pill">Saldo base: <strong id="currentDefaultBalance">0</strong></div>
-      <div class="pill">Free award: <strong id="currentFreeAward">0</strong></div>
-    </div>
+<h2>👤 Usuarios</h2>
 
-    <!-- SETTINGS -->
-    <div class="lobby-hero">
-      <h2>Configuración global</h2>
-      <p>Los valores se guardan en el server.</p>
-    </div>
-
-    <div class="form-grid">
-      <input id="win_rate" type="number" placeholder="Win rate">
-      <input id="multiplier" type="number" placeholder="Multiplicador">
-      <input id="jackpot_bank" type="number" placeholder="Jackpot">
-      <input id="default_balance" type="number" placeholder="Saldo base">
-    </div>
-
-    <div class="form-grid">
-      <input id="slot_pay_3" type="number" placeholder="Pago 3">
-      <input id="slot_pay_4" type="number" placeholder="Pago 4">
-      <input id="slot_pay_5" type="number" placeholder="Pago 5">
-      <input id="roulette_payout" type="number" placeholder="Ruleta">
-      <input id="free_spin_award" type="number" placeholder="Free spins">
-    </div>
-
-    <div class="form-actions">
-      <button class="primary" onclick="saveSettings()">💾 Guardar ajustes</button>
-      <button class="secondary" onclick="reloadAll()">🔄 Recargar</button>
-    </div>
-
-    <!-- CREAR USUARIO -->
-    <div class="lobby-hero">
-      <h2>Crear usuario</h2>
-    </div>
-
-    <div class="form-grid">
-      <input id="newUser" placeholder="Usuario">
-      <input id="newPass" type="password" placeholder="Contraseña">
-      <input id="newBalance" type="number" placeholder="Saldo inicial">
-      <select id="newRole">
-        <option value="player">Player</option>
-        <option value="admin">Admin</option>
-      </select>
-    </div>
-
-    <div class="form-actions">
-      <button class="primary" onclick="createUser()">➕ Crear usuario</button>
-    </div>
-
-    <!-- LISTA -->
-    <div class="lobby-hero">
-      <h2>Usuarios</h2>
-    </div>
-
-    <div id="usersList" class="user-list"></div>
-
-    <p id="msg" class="small"></p>
-
-  </div>
-</div>
+<div id="users"></div>
 
 <script src="/admin.js"></script>
 </body>
