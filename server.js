@@ -196,36 +196,97 @@ async function ensureBootstrapAdmin() {
   }
 }
 
-/* ================= LOGIN ================= */
+/* ================= SLOTS ================= */
 
-app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
+app.post("/api/slots/spin", authRequired, async (req, res) => {
+  const bet = toInt(req.body.amount);
+  const user = await getUserById(req.user.id);
+  const settings = await getAllSettings();
 
-  const user = await getUserByUsername(username);
+  let freeSpins = user.freeSpins || 0;
 
-  if (!user) {
-    return res.status(400).json({ error: "Usuario no existe" });
+  // 🎯 detectar si es free spin
+  const isFreeSpin = freeSpins > 0;
+
+  // ❌ validar saldo SOLO si NO es free spin
+  if (!isFreeSpin && user.balance < bet) {
+    return res.status(400).json({ error: "Saldo insuficiente" });
   }
 
-  const valid = await passwordMatches(password, user.password);
+  const symbols = [
+    "coin.png",
+    "dragon.png",
+    "goldpot.png",
+    "jade.png",
+    "lantern.png",
+    "scatter.png",
+    "wild.png"
+  ];
 
-  if (!valid) {
-    return res.status(400).json({ error: "Contraseña incorrecta" });
+  // 🎰 generar board 5x3
+  const board = [];
+
+  for (let col = 0; col < 5; col++) {
+    const column = [];
+
+    for (let row = 0; row < 3; row++) {
+      const rand = Math.floor(Math.random() * symbols.length);
+      column.push(symbols[rand]);
+    }
+
+    board.push(column);
   }
 
-  const token = issueToken(user);
+  // 💰 calcular win con settings
+  let win = 0;
+
+  for (let row = 0; row < 3; row++) {
+    let first = board[0][row];
+    let count = 1;
+
+    for (let col = 1; col < 5; col++) {
+      if (board[col][row] === first || board[col][row] === "wild.png") {
+        count++;
+      } else break;
+    }
+
+    if (count >= 3) {
+      if (count === 3) win += bet * settings.slot_pay_3;
+      if (count === 4) win += bet * settings.slot_pay_4;
+      if (count === 5) win += bet * settings.slot_pay_5;
+    }
+  }
+
+  // 🎁 SCATTER
+  const scatterCount = board.flat().filter(s => s === "scatter.png").length;
+
+  if (scatterCount >= 3) {
+    freeSpins += settings.free_spin_award;
+  }
+
+  // 👉 consumir free spin
+  if (isFreeSpin) {
+    freeSpins--;
+  }
+
+  // 💵 balance
+  const newBalance = isFreeSpin
+    ? user.balance + win
+    : user.balance - bet + win;
+
+  await saveUser(user.id, {
+    balance: newBalance,
+    freeSpins
+  });
 
   res.json({
     success: true,
-    token,
-    username: user.username,
-    balance: user.balance,
-    role: user.role
+    board,
+    win,
+    freeSpins,
+    isFreeSpin,
+    balance: newBalance
   });
-});
-
-app.get("/api/me", authRequired, (req, res) => {
-  res.json(req.user);
 });
 
 /* ================= ADMIN SETTINGS ================= */
