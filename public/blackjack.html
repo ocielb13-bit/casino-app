@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blackjack</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="app-page">
+  <div class="page">
+    <div class="slot-shell">
+      <div class="top-bar">
+        <div>
+          <div class="eyebrow">Table Game</div>
+          <h1 class="title">🂡 Blackjack</h1>
+          <p class="muted" id="playerLine">Cargando...</p>
+        </div>
+
+        <button class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+      </div>
+
+      <div class="stats">
+        <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
+        <div class="pill">🎯 Apuesta: <strong id="betDisplay">100</strong></div>
+        <div class="pill">🃏 Jugador: <strong id="playerValue">0</strong></div>
+        <div class="pill">🏦 Dealer: <strong id="dealerValue">0</strong></div>
+      </div>
+
+      <div class="lobby-hero">
+        <h2 style="margin-bottom: 10px;">Dealer</h2>
+        <div id="dealerHand" class="row"></div>
+      </div>
+
+      <div class="lobby-hero" style="margin-top: 14px;">
+        <h2 style="margin-bottom: 10px;">Jugador</h2>
+        <div id="playerHand" class="row"></div>
+      </div>
+
+      <div class="form-grid" style="margin-top: 16px;">
+        <input id="bet" type="number" min="1" value="100" placeholder="Apuesta">
+        <button id="dealBtn" class="primary" type="button" onclick="dealHand()">🃏 Repartir</button>
+        <button id="hitBtn" class="secondary" type="button" onclick="hit()" disabled>Hit</button>
+        <button id="standBtn" class="secondary" type="button" onclick="stand()" disabled>Stand</button>
+        <button id="doubleBtn" class="secondary" type="button" onclick="doubleDown()" disabled>Double</button>
+      </div>
+
+      <p id="estado" class="muted" style="min-height: 24px; margin-top: 14px;"></p>
+    </div>
+  </div>
+
+  <script src="/blackjack.js"></script>
+</body>
+</html>
