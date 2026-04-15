@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crash</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="app-page">
+  <div class="page">
+    <div class="slot-shell">
+      <div class="top-bar">
+        <div>
+          <div class="eyebrow">Fast Game</div>
+          <h1 class="title">🚀 Crash</h1>
+          <p class="muted" id="playerLine">Cargando...</p>
+        </div>
+
+        <button class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+      </div>
+
+      <div class="stats">
+        <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
+        <div class="pill">🎯 Apuesta: <strong id="betDisplay">100</strong></div>
+        <div class="pill">📈 Multiplicador: <strong id="multiplier">1.00x</strong></div>
+      </div>
+
+      <div class="lobby-hero" style="text-align:center;">
+        <div id="crashBig" style="font-size:64px; font-weight:900; line-height:1; padding:18px 0;">1.00x</div>
+        <p id="statusLine" class="muted">Listo para empezar.</p>
+        <p id="result" style="min-height:24px; margin:0;"></p>
+      </div>
+
+      <div class="form-grid">
+        <input id="bet" type="number" min="1" value="100" placeholder="Apuesta">
+        <button id="startBtn" class="primary" type="button" onclick="startRound()">🚀 Start</button>
+        <button id="cashoutBtn" class="secondary" type="button" onclick="cashout()" disabled>💸 Cashout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/crash.js"></script>
+</body>
+</html>
