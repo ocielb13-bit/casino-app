@@ -32,61 +32,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
-/* ================= SETTINGS (SUPABASE) ================= */
-
-const DEFAULT_SETTINGS = {
-  win_rate: 30,
-  multiplier: 2,
-  jackpot_bank: 1000,
-  default_balance: 1000,
-  slot_pay_3: 2,
-  slot_pay_4: 5,
-  slot_pay_5: 10,
-  roulette_payout: 35,
-  free_spin_award: 5
-};
-
-async function getSetting(key, fallback) {
-  const { data } = await supabase
-    .from("game_settings")
-    .select("value")
-    .eq("key", key)
-    .maybeSingle();
-
-  if (!data) return fallback;
-
-  const n = Number(data.value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-async function getAllSettings() {
-  const { data } = await supabase
-    .from("game_settings")
-    .select("*");
-
-  const settings = { ...DEFAULT_SETTINGS };
-
-  for (const row of data || []) {
-    const n = Number(row.value);
-    settings[row.key] = Number.isFinite(n) ? n : row.value;
-  }
-
-  return settings;
-}
-
-async function saveSettings(values) {
-  const rows = Object.entries(values).map(([key, value]) => ({
-    key,
-    value: String(value)
-  }));
-
-  if (rows.length > 0) {
-    await supabase
-      .from("game_settings")
-      .upsert(rows, { onConflict: "key" });
-  }
-}
-
 /* ================= HELPERS ================= */
 
 function toInt(v) {
@@ -133,11 +78,7 @@ async function passwordMatches(plain, stored) {
   if (!stored) return false;
 
   if (stored.startsWith("$2")) {
-    try {
-      return await bcrypt.compare(plain, stored);
-    } catch {
-      return false;
-    }
+    return await bcrypt.compare(plain, stored);
   }
 
   return plain === stored;
@@ -167,11 +108,38 @@ function adminOnly(req, res, next) {
   next();
 }
 
+/* ================= LOGIN ================= */
+
+app.post("/api/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await getUserByUsername(username);
+
+  if (!user) {
+    return res.status(400).json({ error: "Usuario no existe" });
+  }
+
+  const valid = await passwordMatches(password, user.password);
+
+  if (!valid) {
+    return res.status(400).json({ error: "Contraseña incorrecta" });
+  }
+
+  const token = issueToken(user);
+
+  res.json({
+    success: true,
+    token,
+    username: user.username,
+    role: user.role,
+    balance: user.balance
+  });
+});
+
 /* ================= ADMIN AUTO ================= */
 
 async function ensureBootstrapAdmin() {
   const admin = await getUserByUsername(BOOTSTRAP_ADMIN_USERNAME);
-
   const hashed = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 10);
 
   if (!admin) {
@@ -201,14 +169,10 @@ async function ensureBootstrapAdmin() {
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   const bet = toInt(req.body.amount);
   const user = await getUserById(req.user.id);
-  const settings = await getAllSettings();
 
   let freeSpins = user.freeSpins || 0;
-
-  // 🎯 detectar si es free spin
   const isFreeSpin = freeSpins > 0;
 
-  // ❌ validar saldo SOLO si NO es free spin
   if (!isFreeSpin && user.balance < bet) {
     return res.status(400).json({ error: "Saldo insuficiente" });
   }
@@ -223,166 +187,16 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
     "wild.png"
   ];
 
-  // 🎰 generar board 5x3
   const board = [];
 
   for (let col = 0; col < 5; col++) {
     const column = [];
-
     for (let row = 0; row < 3; row++) {
-      const rand = Math.floor(Math.random() * symbols.length);
-      column.push(symbols[rand]);
-    }
-
-    board.push(column);
-  }
-
-  // 💰 calcular win con settings
-  let win = 0;
-
-  for (let row = 0; row < 3; row++) {
-    let first = board[0][row];
-    let count = 1;
-
-    for (let col = 1; col < 5; col++) {
-      if (board[col][row] === first || board[col][row] === "wild.png") {
-        count++;
-      } else break;
-    }
-
-    if (count >= 3) {
-      if (count === 3) win += bet * settings.slot_pay_3;
-      if (count === 4) win += bet * settings.slot_pay_4;
-      if (count === 5) win += bet * settings.slot_pay_5;
-    }
-  }
-
-  // 🎁 SCATTER
-  const scatterCount = board.flat().filter(s => s === "scatter.png").length;
-
-  if (scatterCount >= 3) {
-    freeSpins += settings.free_spin_award;
-  }
-
-  // 👉 consumir free spin
-  if (isFreeSpin) {
-    freeSpins--;
-  }
-
-  // 💵 balance
-  const newBalance = isFreeSpin
-    ? user.balance + win
-    : user.balance - bet + win;
-
-  await saveUser(user.id, {
-    balance: newBalance,
-    freeSpins
-  });
-
-  res.json({
-    success: true,
-    board,
-    win,
-    freeSpins,
-    isFreeSpin,
-    balance: newBalance
-  });
-});
-
-/* ================= ADMIN SETTINGS ================= */
-
-app.get("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
-  res.json(await getAllSettings());
-});
-
-app.put("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
-  await saveSettings(req.body);
-  res.json(await getAllSettings());
-});
-
-
-/* ================= ADMIN USERS ================= */
-
-// Obtener todos los usuarios
-app.get("/api/admin/users", authRequired, adminOnly, async (req, res) => {
-  const { data, error } = await supabase
-    .from("app_users")
-    .select("id, username, role, balance")
-    .order("id", { ascending: true });
-
-  if (error) {
-    return res.status(500).json({ error: "Error cargando usuarios" });
-  }
-
-  res.json({ users: data });
-});
-
-
-// Crear usuario
-app.post("/api/admin/users", authRequired, adminOnly, async (req, res) => {
-  const { username, password, balance, role } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: "Faltan datos" });
-  }
-
-  // Verificar si ya existe
-  const existing = await getUserByUsername(username);
-  if (existing) {
-    return res.status(400).json({ error: "Usuario ya existe" });
-  }
-
-  const hashed = await bcrypt.hash(password, 10);
-
-  const { error } = await supabase.from("app_users").insert({
-    username,
-    password: hashed,
-    role: role || "player",
-    balance: balance || 0
-  });
-
-  if (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Error creando usuario" });
-  }
-
-  res.json({ success: true });
-});
-
-
-
-/* ================= SLOTS ================= */
-
-app.post("/api/slots/spin", authRequired, async (req, res) => {
-  const bet = toInt(req.body.amount);
-  const user = await getUserById(req.user.id);
-
-  if (user.balance < bet) {
-    return res.status(400).json({ error: "Saldo insuficiente" });
-  }
-
-  const symbols = [
-    "coin.png",
-    "dragon.png",
-    "goldpot.png",
-    "jade.png",
-    "lantern.png",
-    "scatter.png",
-    "wild.png"
-  ];
-
-  // generar board 5x3
-  const board = [];
-  for (let col = 0; col < 5; col++) {
-    const column = [];
-    for (let row = 0; row < 3; row++) {
-      const rand = Math.floor(Math.random() * symbols.length);
-      column.push(symbols[rand]);
+      column.push(symbols[Math.floor(Math.random() * symbols.length)]);
     }
     board.push(column);
   }
 
-  // lógica simple de win
   let win = 0;
 
   for (let row = 0; row < 3; row++) {
@@ -400,26 +214,33 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
     }
   }
 
-  // scatter bonus
   const scatterCount = board.flat().filter(s => s === "scatter.png").length;
-  let freeSpins = 0;
 
   if (scatterCount >= 3) {
-    freeSpins = 5;
+    freeSpins += 5;
   }
 
-  const newBalance = user.balance - bet + win;
+  if (isFreeSpin) freeSpins--;
 
-  await saveUser(user.id, { balance: newBalance });
+  const newBalance = isFreeSpin
+    ? user.balance + win
+    : user.balance - bet + win;
+
+  await saveUser(user.id, {
+    balance: newBalance,
+    freeSpins
+  });
 
   res.json({
     success: true,
     board,
     win,
     freeSpins,
-    balance: newBalance
+    balance: newBalance,
+    isFreeSpin
   });
 });
+
 /* ================= START ================= */
 
 async function start() {
@@ -427,7 +248,6 @@ async function start() {
 
   app.listen(PORT, () => {
     console.log("🎰 Casino PRO corriendo en puerto " + PORT);
-    console.log("👑 Admin:", BOOTSTRAP_ADMIN_USERNAME);
   });
 }
 
