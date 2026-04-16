@@ -286,8 +286,9 @@ async function jugar() {
     }
 
     highlightWinLines(res.paylines || []);
-
-    if (res.isFreeSpin) {
+  
+  await animatePaylines(res.paylines || []); 
+ if (res.isFreeSpin) {
       showResult("🌀 FREE SPIN!", "bonus");
     } else if (res.win > 0) {
       showResult(`🔥 Ganaste ${res.win}`, "win");
@@ -335,6 +336,92 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "/";
   }
 });
+
+// =======================
+// 🎯 CANVAS PAYLINES
+// =======================
+
+function setupCanvas() {
+  const canvas = document.getElementById("paylineCanvas");
+  const wrapper = document.querySelector(".slot-wrapper");
+
+  if (!canvas || !wrapper) return;
+
+  canvas.width = wrapper.offsetWidth;
+  canvas.height = wrapper.offsetHeight;
+}
+
+function getCellCenter(col, row) {
+  const el = document.getElementById(`r${col}c${row}`);
+  const wrapper = document.querySelector(".slot-wrapper");
+
+  if (!el || !wrapper) return { x: 0, y: 0 };
+
+  const rect = el.getBoundingClientRect();
+  const parentRect = wrapper.getBoundingClientRect();
+
+  return {
+    x: rect.left - parentRect.left + rect.width / 2,
+    y: rect.top - parentRect.top + rect.height / 2
+  };
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById("paylineCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawPayline(line, color = "gold") {
+  const canvas = document.getElementById("paylineCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.beginPath();
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = color;
+
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+
+  line.forEach((row, col) => {
+    const pos = getCellCenter(col, row);
+
+    if (col === 0) ctx.moveTo(pos.x, pos.y);
+    else ctx.lineTo(pos.x, pos.y);
+  });
+
+  ctx.stroke();
+}
+
+async function animatePaylines(paylines) {
+  if (!Array.isArray(paylines) || paylines.length === 0) return;
+
+  const colors = ["gold", "lime", "cyan", "red", "magenta"];
+
+  for (let i = 0; i < paylines.length; i++) {
+    const line = paylines[i];
+
+    drawPayline(line.line, colors[i % colors.length]);
+
+    setText(
+      "detallePago",
+      `Línea ${line.lineNumber} paga ${line.payout}`
+    );
+
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+
+  clearCanvas();
+}
+
+
+
 
 window.jugar = jugar;
 window.changeBet = changeBet;
