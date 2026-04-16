@@ -338,7 +338,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // =======================
-// 🎯 CANVAS PAYLINES
+// 🎯 CANVAS PAYLINES (PRO VERSION)
 // =======================
 
 function setupCanvas() {
@@ -374,7 +374,10 @@ function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+// 🎨 DRAW PRO
 function drawPayline(line, color = "gold") {
+  if (!Array.isArray(line)) return; // 🔥 evita crash
+
   const canvas = document.getElementById("paylineCanvas");
   if (!canvas) return;
 
@@ -383,11 +386,15 @@ function drawPayline(line, color = "gold") {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.beginPath();
-  ctx.lineWidth = 5;
+
+  // 🎰 efecto dinámico
+  ctx.lineWidth = 6 + Math.random() * 2;
   ctx.strokeStyle = color;
 
+  // ✨ glow PRO
   ctx.shadowColor = color;
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 20;
+  ctx.globalAlpha = 0.9;
 
   line.forEach((row, col) => {
     const pos = getCellCenter(col, row);
@@ -397,8 +404,13 @@ function drawPayline(line, color = "gold") {
   });
 
   ctx.stroke();
+
+  // reset por seguridad
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
 }
 
+// 🎬 ANIMACIÓN MEJORADA
 async function animatePaylines(paylines) {
   if (!Array.isArray(paylines) || paylines.length === 0) return;
 
@@ -407,6 +419,9 @@ async function animatePaylines(paylines) {
   for (let i = 0; i < paylines.length; i++) {
     const line = paylines[i];
 
+    // 🔥 evita errores si backend no manda bien
+    if (!line || !Array.isArray(line.line)) continue;
+
     drawPayline(line.line, colors[i % colors.length]);
 
     setText(
@@ -414,11 +429,18 @@ async function animatePaylines(paylines) {
       `Línea ${line.lineNumber} paga ${line.payout}`
     );
 
-    await new Promise((r) => setTimeout(r, 1000));
+    // ⚡ más rápido y dinámico
+    await new Promise((r) => setTimeout(r, 700));
   }
 
-  clearCanvas();
+  // 🎯 si hay solo 1 línea, la dejamos visible (queda PRO)
+  if (paylines.length > 1) {
+    clearCanvas();
+  }
 }
+
+window.addEventListener("resize", setupCanvas);
+document.addEventListener("DOMContentLoaded", setupCanvas);
 
 
 window.addEventListener("resize", setupCanvas);
