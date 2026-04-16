@@ -112,3 +112,7 @@ function action() {
 }
 
 document.getElementById("btnAction").onclick = action;
+
+function startRound() {
+  startGame();
+}
