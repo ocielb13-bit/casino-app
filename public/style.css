@@ -23,6 +23,8 @@ html, body {
   min-height: 100%;
 }
 
+
+
 body {
   margin: 0;
   color: var(--text);
@@ -758,4 +760,13 @@ button.danger {
 .bet-controls button:hover {
   background: #444;
 }
+
+/* ===== CRASH GAME ===== */
+.big-multiplier {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 18px 0;
+  text-shadow: 0 0 20px rgba(255,255,255,0.3);
+  transition: color 0.2s ease, transform 0.1s ease;
 }
