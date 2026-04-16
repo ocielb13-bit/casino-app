@@ -450,129 +450,86 @@ app.post("/api/roulette/spin", authRequired, async (req, res) => {
   }
 });
 
-
-/* ================= CRASH ================= */
+/* ================= CRASH GAME ================= */
 
 const crashRounds = new Map();
-const CRASH_GROWTH_PER_SECOND = 0.45;
-
-function crashMultiplierAt(ms) {
-  return Number((1 + (ms / 1000) * CRASH_GROWTH_PER_SECOND).toFixed(2));
-}
-
-function pickCrashPoint(settings) {
-  const volatility = String(settings.volatility || "medium");
-  const floor = volatility === "low" ? 1.18 : volatility === "high" ? 1.08 : 1.12;
-  const ceiling = volatility === "low" ? 6 : volatility === "high" ? 20 : 12;
-  const exponent = volatility === "low" ? 1.4 : volatility === "high" ? 2.8 : 1.9;
-
-  return Number((floor + Math.pow(Math.random(), exponent) * (ceiling - floor)).toFixed(2));
-}
 
 function getCrashRound(userId) {
-  return crashRounds.get(Number(userId)) || null;
+  return crashRounds.get(userId) || null;
 }
 
-app.get("/api/crash/state", authRequired, (req, res) => {
-  const round = getCrashRound(req.user.id);
+// 🎯 iniciar crash
+app.post("/api/crash/start", authRequired, async (req, res) => {
+  const user = await getUserById(req.user.id);
+  const bet = Number(req.body.amount);
 
-  if (!round) {
-    return res.json({ success: true, active: false });
+  if (!bet || bet <= 0) {
+    return res.status(400).json({ error: "Apuesta inválida" });
   }
 
-  const elapsed = Date.now() - round.startedAt;
-  const currentMultiplier = crashMultiplierAt(elapsed);
+  if (user.balance < bet) {
+    return res.status(400).json({ error: "Saldo insuficiente" });
+  }
+
+  // evitar doble partida
+  if (getCrashRound(user.id)) {
+    return res.status(400).json({ error: "Ya tenés una partida activa" });
+  }
+
+  // generar crash point (entre 1.2x y 5x aprox)
+  const crashPoint = Number((1.2 + Math.random() * 3.8).toFixed(2));
+
+  // descontar saldo
+  const newBalance = user.balance - bet;
+  await saveUser(user.id, { balance: newBalance });
+
+  crashRounds.set(user.id, {
+    bet,
+    crashPoint,
+    startedAt: Date.now()
+  });
 
   res.json({
     success: true,
-    active: true,
-    bet: round.bet,
-    startedAt: round.startedAt,
-    crashPoint: round.crashPoint,
-    currentMultiplier,
-    canCashout: currentMultiplier < round.crashPoint
+    crashPoint // 👈 el frontend lo usa
   });
 });
 
-app.post("/api/crash/start", authRequired, async (req, res) => {
-  try {
-    const bet = Math.floor(Number(req.body.amount));
-    const user = await getUserById(req.user.id);
-    const settings = await getSettings();
-
-    if (!Number.isFinite(bet) || bet <= 0) {
-      return res.status(400).json({ error: "Apuesta inválida" });
-    }
-
-    if (getCrashRound(user.id)) {
-      return res.status(400).json({ error: "Ya tenés una ronda activa" });
-    }
-
-    if (user.balance < bet) {
-      return res.status(400).json({ error: "Saldo insuficiente" });
-    }
-
-    const crashPoint = pickCrashPoint(settings);
-    const startedAt = Date.now();
-    const newBalance = Math.max(0, Number(user.balance || 0) - bet);
-
-    crashRounds.set(user.id, {
-      bet,
-      startedAt,
-      crashPoint
-    });
-
-    await saveUser(user.id, { balance: newBalance });
-
-    res.json({
-      success: true,
-      active: true,
-      bet,
-      startedAt,
-      crashPoint,
-      balance: newBalance,
-      currentMultiplier: 1
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
+// 💰 retirar
 app.post("/api/crash/cashout", authRequired, async (req, res) => {
-  try {
-    const user = await getUserById(req.user.id);
-    const round = getCrashRound(user.id);
+  const user = await getUserById(req.user.id);
+  const round = getCrashRound(user.id);
 
-    if (!round) {
-      return res.status(400).json({ error: "No hay ronda activa" });
-    }
-
-    const elapsed = Date.now() - round.startedAt;
-    const currentMultiplier = crashMultiplierAt(elapsed);
-
-    if (currentMultiplier >= round.crashPoint) {
-      crashRounds.delete(user.id);
-      return res.status(400).json({
-        error: `Se estrelló en x${round.crashPoint}`
-      });
-    }
-
-    const payout = Math.max(0, Math.floor(round.bet * currentMultiplier));
-    const newBalance = Math.max(0, Number(user.balance || 0) + payout);
-
-    crashRounds.delete(user.id);
-    await saveUser(user.id, { balance: newBalance });
-
-    res.json({
-      success: true,
-      win: payout,
-      cashoutMultiplier: currentMultiplier,
-      crashPoint: round.crashPoint,
-      balance: newBalance
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (!round) {
+    return res.status(400).json({ error: "No hay partida activa" });
   }
+
+  const currentMultiplier = Number(req.body.multiplier);
+
+  // perdió
+  if (currentMultiplier >= round.crashPoint) {
+    crashRounds.delete(user.id);
+
+    return res.json({
+      success: false,
+      crashed: true,
+      crashPoint: round.crashPoint
+    });
+  }
+
+  // ganó
+  const win = Math.floor(round.bet * currentMultiplier);
+  const newBalance = user.balance + win;
+
+  await saveUser(user.id, { balance: newBalance });
+
+  crashRounds.delete(user.id);
+
+  res.json({
+    success: true,
+    win,
+    balance: newBalance
+  });
 });
 
 /* ================= BLACKJACK ================= */
