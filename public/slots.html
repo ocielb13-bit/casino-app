@@ -11,6 +11,7 @@
     <div class="machine">
       <div class="slot-shell">
 
+        <!-- 🔝 HEADER -->
         <div class="top-bar">
           <div>
             <div class="eyebrow">Slots</div>
@@ -18,9 +19,12 @@
             <p class="muted" id="playerLine">Cargando...</p>
           </div>
 
-          <button class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+          <button class="secondary" onclick="window.location.href='/menu.html'">
+            ⬅ Volver
+          </button>
         </div>
 
+        <!-- 📊 STATS -->
         <div class="stats">
           <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
           <div class="pill">🌀 Free Spins: <strong id="freeLine">0</strong></div>
@@ -31,71 +35,77 @@
           <div class="pill">🎯 Apuesta: <strong id="bet">100</strong></div>
         </div>
 
-        <div class="slot-grid">
-          <div class="reel"><img id="r0c0" alt=""></div>
-          <div class="reel"><img id="r0c1" alt=""></div>
-          <div class="reel"><img id="r0c2" alt=""></div>
+        <!-- 🎰 SLOT + CANVAS -->
+        <div class="slot-wrapper">
 
-          <div class="reel"><img id="r1c0" alt=""></div>
-          <div class="reel"><img id="r1c1" alt=""></div>
-          <div class="reel"><img id="r1c2" alt=""></div>
+          <!-- 🎯 PAYLINE CANVAS -->
+          <canvas id="paylineCanvas"></canvas>
 
-          <div class="reel"><img id="r2c0" alt=""></div>
-          <div class="reel"><img id="r2c1" alt=""></div>
-          <div class="reel"><img id="r2c2" alt=""></div>
+          <!-- 🎰 GRID REAL -->
+          <div class="slot-grid">
 
-          <div class="reel"><img id="r3c0" alt=""></div>
-          <div class="reel"><img id="r3c1" alt=""></div>
-          <div class="reel"><img id="r3c2" alt=""></div>
+            <!-- Columna 1 -->
+            <div class="reel">
+              <img id="r0c0" alt="">
+              <img id="r0c1" alt="">
+              <img id="r0c2" alt="">
+            </div>
 
-          <div class="reel"><img id="r4c0" alt=""></div>
-          <div class="reel"><img id="r4c1" alt=""></div>
-          <div class="reel"><img id="r4c2" alt=""></div>
+            <!-- Columna 2 -->
+            <div class="reel">
+              <img id="r1c0" alt="">
+              <img id="r1c1" alt="">
+              <img id="r1c2" alt="">
+            </div>
+
+            <!-- Columna 3 -->
+            <div class="reel">
+              <img id="r2c0" alt="">
+              <img id="r2c1" alt="">
+              <img id="r2c2" alt="">
+            </div>
+
+            <!-- Columna 4 -->
+            <div class="reel">
+              <img id="r3c0" alt="">
+              <img id="r3c1" alt="">
+              <img id="r3c2" alt="">
+            </div>
+
+            <!-- Columna 5 -->
+            <div class="reel">
+              <img id="r4c0" alt="">
+              <img id="r4c1" alt="">
+              <img id="r4c2" alt="">
+            </div>
+
+          </div>
         </div>
 
-<div class="slot-wrapper">
-  <canvas id="paylineCanvas"></canvas>
+        <p class="slot-caption">
+          25 paylines activas · el pago se acumula por línea.
+        </p>
 
-  <div class="slot-grid">
-    <div class="reel"><img id="r0c0" alt=""></div>
-    <div class="reel"><img id="r0c1" alt=""></div>
-    <div class="reel"><img id="r0c2" alt=""></div>
-
-    <div class="reel"><img id="r1c0" alt=""></div>
-    <div class="reel"><img id="r1c1" alt=""></div>
-    <div class="reel"><img id="r1c2" alt=""></div>
-
-    <div class="reel"><img id="r2c0" alt=""></div>
-    <div class="reel"><img id="r2c1" alt=""></div>
-    <div class="reel"><img id="r2c2" alt=""></div>
-
-    <div class="reel"><img id="r3c0" alt=""></div>
-    <div class="reel"><img id="r3c1" alt=""></div>
-    <div class="reel"><img id="r3c2" alt=""></div>
-
-    <div class="reel"><img id="r4c0" alt=""></div>
-    <div class="reel"><img id="r4c1" alt=""></div>
-    <div class="reel"><img id="r4c2" alt=""></div>
-  </div>
-</div>
-
-        <p class="slot-caption">25 paylines activas · el pago se acumula por línea.</p>
-
+        <!-- 🎮 CONTROLES -->
         <div class="controls">
           <div class="bet-controls">
-            <button type="button" onclick="changeBet(-1000)">-1000</button>
-            <button type="button" onclick="changeBet(-100)">-100</button>
-            <button type="button" onclick="changeBet(-10)">-10</button>
-            <button type="button" onclick="changeBet(10)">+10</button>
-            <button type="button" onclick="changeBet(100)">+100</button>
-            <button type="button" onclick="changeBet(1000)">+1000</button>
+            <button onclick="changeBet(-1000)">-1000</button>
+            <button onclick="changeBet(-100)">-100</button>
+            <button onclick="changeBet(-10)">-10</button>
+            <button onclick="changeBet(10)">+10</button>
+            <button onclick="changeBet(100)">+100</button>
+            <button onclick="changeBet(1000)">+1000</button>
           </div>
 
-          <button id="btnSpin" class="spin-btn" type="button" onclick="jugar()">🎰 GIRAR</button>
+          <button id="btnSpin" class="spin-btn" onclick="jugar()">
+            🎰 GIRAR
+          </button>
         </div>
 
+        <!-- 📢 PAYLINES INFO -->
         <div id="paylineFeed" class="payline-feed"></div>
 
+        <!-- 📊 RESULTADOS -->
         <div class="results">
           <p id="resultado"></p>
           <p id="detallePago"></p>
