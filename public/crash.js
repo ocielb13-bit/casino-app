@@ -2,8 +2,28 @@ let running = false;
 let crashed = false;
 let multiplier = 1;
 let interval = null;
+let crashPoint = 0;
 
 const growthSpeed = 0.02;
+
+function byId(...ids) {
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) return el;
+  }
+  return null;
+}
+
+function setTextAny(ids, value) {
+  const el = byId(...ids);
+  if (el) el.textContent = value;
+}
+
+function getNumberValue(...ids) {
+  const el = byId(...ids);
+  if (!el) return 0;
+  return Number(el.value || el.textContent || 0);
+}
 
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -16,101 +36,168 @@ async function api(path, options = {}) {
     ...options
   });
 
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+    return;
+  }
+
+  if (!res.ok) {
+    throw new Error(data.error || "Error");
+  }
+
+  return data;
+}
+
+function updateBalanceUI(value) {
+  setTextAny(["balance", "saldo"], value);
+}
+
+function updateMultiplierUI(value) {
+  const text = Number(value).toFixed(2) + "x";
+  setTextAny(["multiplier", "crashBig"], text);
+}
+
+function updateStatus(text) {
+  setTextAny(["status", "statusLine"], text);
+}
+
+function updateButton(text, disabled) {
+  const btn = byId("btnAction", "startBtn");
+  if (!btn) return;
+  btn.disabled = !!disabled;
+  btn.textContent = text;
 }
 
 function resetGame() {
   running = false;
   crashed = false;
   multiplier = 1;
+  crashPoint = 0;
 
   clearInterval(interval);
+  interval = null;
 
-  document.getElementById("multiplier").textContent = "1.00x";
-  document.getElementById("status").textContent = "Esperando apuesta...";
+  updateMultiplierUI(1);
+  updateStatus("Esperando apuesta...");
+  updateButton("🚀 Apostar", false);
+}
 
-  const btn = document.getElementById("btnAction");
-  btn.disabled = false;
-  btn.textContent = "🚀 Apostar";
+async function refreshBalance() {
+  try {
+    const me = await api("/api/me");
+    if (me && me.balance !== undefined) {
+      updateBalanceUI(me.balance);
+    }
+  } catch {}
 }
 
 async function startGame() {
   if (running) return;
 
-  const bet = Number(document.getElementById("bet").value);
-
-  const res = await api("/api/crash/start", {
-    method: "POST",
-    body: JSON.stringify({ amount: bet })
-  });
-
-  if (!res.success) {
-    alert(res.error || "Error");
+  const bet = Number(getNumberValue("bet"));
+  if (!Number.isFinite(bet) || bet <= 0) {
+    updateStatus("Poné una apuesta válida");
     return;
   }
 
-  running = true;
-  crashed = false;
-  multiplier = 1;
+  try {
+    const res = await api("/api/crash/start", {
+      method: "POST",
+      body: JSON.stringify({ amount: bet })
+    });
 
-  const crashPoint = res.crashPoint;
-
-  const btn = document.getElementById("btnAction");
-  btn.textContent = "💰 Retirar";
-
-  interval = setInterval(() => {
-    multiplier += growthSpeed;
-
-    document.getElementById("multiplier").textContent =
-      multiplier.toFixed(2) + "x";
-
-    if (multiplier >= crashPoint) {
-      crashGame();
+    if (!res.success) {
+      updateStatus(res.error || "Error");
+      return;
     }
 
-  }, 50);
+    running = true;
+    crashed = false;
+    multiplier = 1;
+    crashPoint = Number(res.crashPoint || 0);
+
+    updateBalanceUI(res.balance);
+    updateStatus("Corriendo...");
+    updateButton("💰 Retirar", false);
+    updateMultiplierUI(1);
+
+    clearInterval(interval);
+    interval = setInterval(() => {
+      if (!running) return;
+
+      multiplier += growthSpeed;
+      updateMultiplierUI(multiplier);
+
+      if (crashPoint && multiplier >= crashPoint) {
+        crashGame();
+      }
+    }, 50);
+  } catch (err) {
+    updateStatus(err.message || "Error");
+  }
 }
 
 async function cashOut() {
   if (!running || crashed) return;
 
-  const res = await api("/api/crash/cashout", {
-    method: "POST"
-  });
+  try {
+    const res = await api("/api/crash/cashout", {
+      method: "POST"
+    });
 
-  clearInterval(interval);
+    clearInterval(interval);
+    interval = null;
 
-  // 💣 SI PERDIÓ
-  if (!res.success) {
+    if (!res.success) {
+      crashed = true;
+      running = false;
+
+      updateStatus("💥 CRASH en " + Number(res.crashPoint || crashPoint || multiplier).toFixed(2) + "x");
+      await api("/api/crash/crash", { method: "POST" }).catch(() => {});
+      await refreshBalance();
+
+      setTimeout(resetGame, 1500);
+      return;
+    }
+
+    updateBalanceUI(res.balance);
+    updateStatus("💰 Cobraste " + res.win);
+    updateMultiplierUI(res.cashoutMultiplier || multiplier);
+
+    setTimeout(resetGame, 1200);
+  } catch (err) {
+    clearInterval(interval);
+    interval = null;
     crashed = true;
     running = false;
 
-    document.getElementById("status").textContent =
-      "💥 CRASH en " + (res.crashPoint || multiplier.toFixed(2)) + "x";
+    updateStatus(err.message || "Error");
+    await api("/api/crash/crash", { method: "POST" }).catch(() => {});
+    await refreshBalance();
 
-    setTimeout(resetGame, 2000);
-    return;
+    setTimeout(resetGame, 1500);
   }
-
-  // 💰 SI GANÓ
-  document.getElementById("status").textContent =
-    "💰 Cobraste " + res.win;
-
-  document.getElementById("balance").textContent = res.balance;
-
-  setTimeout(resetGame, 1500);
 }
 
-function crashGame() {
+async function crashGame() {
+  if (crashed) return;
+
   crashed = true;
   running = false;
 
   clearInterval(interval);
+  interval = null;
 
-  document.getElementById("status").textContent =
-    "💥 CRASH en " + multiplier.toFixed(2) + "x";
+  updateStatus("💥 CRASH en " + multiplier.toFixed(2) + "x");
+  updateButton("🚀 Apostar", true);
 
-  setTimeout(resetGame, 2000);
+  await api("/api/crash/crash", { method: "POST" }).catch(() => {});
+  await refreshBalance();
+
+  setTimeout(resetGame, 1500);
 }
 
 function action() {
@@ -121,9 +208,46 @@ function action() {
   }
 }
 
-document.getElementById("btnAction").onclick = action;
+document.addEventListener("DOMContentLoaded", async () => {
+  const btn = byId("btnAction", "startBtn");
+  if (btn) btn.onclick = action;
 
-// opcional si lo usa el HTML
+  try {
+    await refreshBalance();
+
+    const state = await api("/api/crash/state");
+    if (state && state.active) {
+      running = true;
+      crashed = false;
+      crashPoint = Number(state.crashPoint || 0);
+      multiplier = Number(state.currentMultiplier || 1);
+
+      updateMultiplierUI(multiplier);
+      updateStatus("Ronda activa. Podés cashout.");
+      updateButton("💰 Retirar", false);
+
+      clearInterval(interval);
+      interval = setInterval(() => {
+        if (!running) return;
+
+        multiplier += growthSpeed;
+        updateMultiplierUI(multiplier);
+
+        if (crashPoint && multiplier >= crashPoint) {
+          crashGame();
+        }
+      }, 50);
+    } else {
+      resetGame();
+    }
+  } catch {
+    resetGame();
+  }
+});
+
 function startRound() {
   startGame();
 }
+window.startRound = startRound;
+window.cashOut = cashOut;
+window.action = action;
