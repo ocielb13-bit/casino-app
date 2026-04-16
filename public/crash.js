@@ -56,8 +56,24 @@ function updateBalanceUI(value) {
 }
 
 function updateMultiplierUI(value) {
-  const text = Number(value).toFixed(2) + "x";
-  setTextAny(["multiplier", "crashBig"], text);
+  const el = byId("crashBig", "multiplier");
+  if (!el) return;
+
+  const val = Number(value);
+  el.textContent = val.toFixed(2) + "x";
+
+  // 🎨 COLORES DINÁMICOS
+  if (val < 1.5) {
+    el.style.color = "#ffffff"; // blanco
+  } else if (val < 2) {
+    el.style.color = "#00ff88"; // verde
+  } else if (val < 5) {
+    el.style.color = "#00c3ff"; // azul
+  } else if (val < 10) {
+    el.style.color = "#ffcc00"; // amarillo
+  } else {
+    el.style.color = "#ff3b3b"; // rojo🔥
+  }
 }
 
 function updateStatus(text) {
