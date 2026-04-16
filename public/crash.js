@@ -1,12 +1,9 @@
-const CRASH_GROWTH_PER_SECOND = 0.45;
+let running = false;
+let crashed = false;
+let multiplier = 1;
+let interval = null;
 
-let crashState = {
-  active: false,
-  startedAt: 0,
-  crashPoint: 0,
-  bet: 0,
-  raf: null
-};
+const growthSpeed = 0.02;
 
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
@@ -19,186 +16,99 @@ async function api(path, options = {}) {
     ...options
   });
 
-  const data = await res.json().catch(() => ({}));
+  return res.json();
+}
 
-  if (res.status === 401) {
-    localStorage.removeItem("token");
-    window.location.href = "/";
+function resetGame() {
+  running = false;
+  crashed = false;
+  multiplier = 1;
+
+  clearInterval(interval);
+
+  document.getElementById("multiplier").textContent = "1.00x";
+  document.getElementById("status").textContent = "Esperando apuesta...";
+  
+  const btn = document.getElementById("btnAction");
+  btn.disabled = false;
+  btn.textContent = "🚀 Apostar";
+}
+
+async function startGame() {
+  if (running) return;
+
+  const bet = Number(document.getElementById("bet").value);
+
+  const res = await api("/api/crash/start", {
+    method: "POST",
+    body: JSON.stringify({ amount: bet })
+  });
+
+  if (!res.success) {
+    alert("Error");
     return;
   }
 
-  if (!res.ok) throw new Error(data.error || "Error");
-  return data;
-}
+  running = true;
+  crashed = false;
+  multiplier = 1;
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
+  const crashPoint = res.crashPoint;
 
-function currentMultiplierAt(startedAt) {
-  const elapsed = Date.now() - startedAt;
-  return Number((1 + (elapsed / 1000) * CRASH_GROWTH_PER_SECOND).toFixed(2));
-}
+  const btn = document.getElementById("btnAction");
+  btn.textContent = "💰 Retirar";
 
-function renderCrash(mult) {
-  const value = Number(mult || 1);
-  setText("multiplier", `${value.toFixed(2)}x`);
-  setText("crashBig", `${value.toFixed(2)}x`);
-}
+  interval = setInterval(() => {
+    multiplier += growthSpeed;
 
-function setButtons(active) {
-  const startBtn = document.getElementById("startBtn");
-  const cashoutBtn = document.getElementById("cashoutBtn");
-  const betInput = document.getElementById("bet");
+    document.getElementById("multiplier").textContent =
+      multiplier.toFixed(2) + "x";
 
-  if (startBtn) startBtn.disabled = active;
-  if (cashoutBtn) cashoutBtn.disabled = !active;
-  if (betInput) betInput.disabled = active;
-}
-
-function stopLoop() {
-  if (crashState.raf) {
-    cancelAnimationFrame(crashState.raf);
-    crashState.raf = null;
-  }
-}
-
-function tick() {
-  if (!crashState.active) return;
-
-  const current = currentMultiplierAt(crashState.startedAt);
-  renderCrash(current);
-
-  if (current >= crashState.crashPoint) {
-    crashState.active = false;
-    stopLoop();
-    setButtons(false);
-    setText("statusLine", `💥 Se estrelló en x${crashState.crashPoint.toFixed(2)}`);
-    setText("result", "Perdiste la apuesta");
-    renderCrash(crashState.crashPoint);
-    return;
-  }
-
-  crashState.raf = requestAnimationFrame(tick);
-}
-
-function resumeRound(state) {
-  crashState = {
-    active: true,
-    startedAt: state.startedAt,
-    crashPoint: state.crashPoint,
-    bet: state.bet,
-    raf: null
-  };
-
-  setButtons(true);
-  setText("statusLine", "Ronda activa. Podés cashout.");
-  setText("result", "");
-  renderCrash(state.currentMultiplier || 1);
-  stopLoop();
-  crashState.raf = requestAnimationFrame(tick);
-}
-
-async function loadMe() {
-  const me = await api("/api/me");
-  if (!me) return;
-
-  setText("playerLine", me.username);
-  setText("saldo", me.balance);
-}
-
-async function loadState() {
-  try {
-    const state = await api("/api/crash/state");
-    if (!state) return;
-
-    if (state.active) {
-      resumeRound(state);
-    } else {
-      crashState.active = false;
-      stopLoop();
-      setButtons(false);
-      setText("statusLine", "Listo para empezar.");
-      setText("result", "");
-      renderCrash(1);
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function startRound() {
-  if (crashState.active) return;
-
-  try {
-    const bet = Number(document.getElementById("bet").value || 100);
-
-    if (!Number.isFinite(bet) || bet <= 0) {
-      setText("result", "Poné una apuesta válida");
-      return;
+    if (multiplier >= crashPoint) {
+      crashGame();
     }
 
-    const data = await api("/api/crash/start", {
-      method: "POST",
-      body: JSON.stringify({ amount: bet })
-    });
+  }, 50);
+}
 
-    crashState = {
-      active: true,
-      startedAt: data.startedAt,
-      crashPoint: data.crashPoint,
-      bet: data.bet,
-      raf: null
-    };
+async function cashOut() {
+  if (!running || crashed) return;
 
-    setText("saldo", data.balance);
-    setText("statusLine", "Corriendo...");
-    setText("result", "");
-    renderCrash(1);
-    setButtons(true);
+  const res = await api("/api/crash/cashout", {
+    method: "POST",
+    body: JSON.stringify({ multiplier })
+  });
 
-    stopLoop();
-    crashState.raf = requestAnimationFrame(tick);
-  } catch (err) {
-    setText("result", err.message || "Error");
+  document.getElementById("status").textContent =
+    "💰 Cobraste " + res.win;
+
+  document.getElementById("balance").textContent = res.balance;
+
+  clearInterval(interval);
+
+  // 🔥 IMPORTANTE
+  setTimeout(resetGame, 1500);
+}
+
+function crashGame() {
+  crashed = true;
+  running = false;
+
+  clearInterval(interval);
+
+  document.getElementById("status").textContent =
+    "💥 CRASH en " + multiplier.toFixed(2) + "x";
+
+  // 🔥 IMPORTANTE
+  setTimeout(resetGame, 2000);
+}
+
+function action() {
+  if (!running) {
+    startGame();
+  } else {
+    cashOut();
   }
 }
 
-async function cashout() {
-  if (!crashState.active) return;
-
-  try {
-    const data = await api("/api/crash/cashout", {
-      method: "POST"
-    });
-
-    crashState.active = false;
-    stopLoop();
-    setButtons(false);
-
-    setText("saldo", data.balance);
-    setText("statusLine", `Cobraste en x${Number(data.cashoutMultiplier).toFixed(2)}`);
-    setText("result", `🔥 Ganaste ${data.win}`);
-    renderCrash(data.cashoutMultiplier);
-  } catch (err) {
-    crashState.active = false;
-    stopLoop();
-    setButtons(false);
-    setText("result", err.message || "Crash");
-    setText("statusLine", "Ronda terminada");
-  }
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await loadMe();
-    await loadState();
-  } catch {
-    localStorage.removeItem("token");
-    window.location.href = "/";
-  }
-});
-
-window.startRound = startRound;
-window.cashout = cashout;
+document.getElementById("btnAction").onclick = action;
