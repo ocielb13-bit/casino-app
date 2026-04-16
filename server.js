@@ -331,8 +331,17 @@ const PAYLINES = [
   [2, 0, 1, 2, 0]
 ];
 
-function buildBoard() {
-  const weighted = [
+const SYMBOL_WEIGHTS = {
+  low: [
+    { symbol: "coin.png", weight: 30 },
+    { symbol: "jade.png", weight: 24 },
+    { symbol: "lantern.png", weight: 20 },
+    { symbol: "goldpot.png", weight: 12 },
+    { symbol: "dragon.png", weight: 5 },
+    { symbol: "wild.png", weight: 6 },
+    { symbol: "scatter.png", weight: 3 }
+  ],
+  medium: [
     { symbol: "coin.png", weight: 24 },
     { symbol: "jade.png", weight: 20 },
     { symbol: "lantern.png", weight: 18 },
@@ -340,10 +349,32 @@ function buildBoard() {
     { symbol: "dragon.png", weight: 8 },
     { symbol: "wild.png", weight: 5 },
     { symbol: "scatter.png", weight: 3 }
-  ];
+  ],
+  high: [
+    { symbol: "coin.png", weight: 18 },
+    { symbol: "jade.png", weight: 18 },
+    { symbol: "lantern.png", weight: 16 },
+    { symbol: "goldpot.png", weight: 12 },
+    { symbol: "dragon.png", weight: 12 },
+    { symbol: "wild.png", weight: 6 },
+    { symbol: "scatter.png", weight: 4 }
+  ]
+};
+
+const SYMBOL_MULTIPLIERS = {
+  "coin.png": 1,
+  "jade.png": 1.1,
+  "lantern.png": 1.25,
+  "goldpot.png": 1.5,
+  "dragon.png": 2.5,
+  "wild.png": 3
+};
+
+function buildBoard(settings) {
+  const weights = SYMBOL_WEIGHTS[String(settings.volatility || "medium")] || SYMBOL_WEIGHTS.medium;
 
   return Array.from({ length: 5 }, () =>
-    Array.from({ length: 3 }, () => weightedPick(weighted))
+    Array.from({ length: 3 }, () => weightedPick(weights))
   );
 }
 
@@ -358,7 +389,7 @@ function resolvePaylineTarget(board, line) {
   return "wild.png";
 }
 
-function evaluatePayline(board, line, bet, settings, lineNumber) {
+function evaluatePayline(board, line, betPerLine, settings, lineNumber) {
   const target = resolvePaylineTarget(board, line);
   const cells = [];
   let count = 0;
@@ -378,9 +409,12 @@ function evaluatePayline(board, line, bet, settings, lineNumber) {
   if (count < 3) return null;
 
   let payout = 0;
-  if (count === 3) payout = bet * settings.slot_pay_3;
-  else if (count === 4) payout = bet * settings.slot_pay_4;
-  else payout = bet * settings.slot_pay_5;
+  if (count === 3) payout = betPerLine * settings.slot_pay_3;
+  else if (count === 4) payout = betPerLine * settings.slot_pay_4;
+  else payout = betPerLine * settings.slot_pay_5;
+
+  payout *= SYMBOL_MULTIPLIERS[target] || 1;
+  payout = Math.floor(payout);
 
   return {
     lineNumber,
@@ -395,8 +429,10 @@ function calcSlotWin(board, bet, settings) {
   const paylines = [];
   let win = 0;
 
+  const betPerLine = bet / PAYLINES.length;
+
   PAYLINES.forEach((line, index) => {
-    const hit = evaluatePayline(board, line, bet, settings, index + 1);
+    const hit = evaluatePayline(board, line, betPerLine, settings, index + 1);
     if (hit) {
       paylines.push(hit);
       win += hit.payout;
@@ -446,7 +482,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       return res.status(400).json({ error: "Saldo insuficiente" });
     }
 
-    const board = buildBoard();
+    const board = buildBoard(settings);
     const outcome = calcSlotWin(board, bet, settings);
 
     if (outcome.freeSpinsAwarded > 0) {
@@ -483,6 +519,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 /* ================= RULETTE ================= */
 
 app.post("/api/roulette/spin", authRequired, async (req, res) => {
@@ -1057,7 +1094,6 @@ app.post("/api/blackjack/action", authRequired, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 /* ================= START ================= */
 
