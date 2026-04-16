@@ -44,11 +44,11 @@ async function startGame() {
     body: JSON.stringify({ amount: bet })
   });
 
-  if (!res.success) {
-    alert("Error");
-    return;
-  }
-
+if (!res.success) {
+  alert(res.error || "Error");
+  return;
+}
+  
   running = true;
   crashed = false;
   multiplier = 1;
@@ -79,6 +79,28 @@ async function cashOut() {
     body: JSON.stringify({ multiplier })
   });
 
+  clearInterval(interval);
+
+  // 💣 SI PERDIÓ
+  if (!res.success) {
+    crashed = true;
+    running = false;
+
+    document.getElementById("status").textContent =
+      "💥 CRASH en " + res.crashPoint + "x";
+
+    setTimeout(resetGame, 2000);
+    return;
+  }
+
+  // 💰 SI GANÓ
+  document.getElementById("status").textContent =
+    "💰 Cobraste " + res.win;
+
+  document.getElementById("balance").textContent = res.balance;
+
+  setTimeout(resetGame, 1500);
+}
   document.getElementById("status").textContent =
     "💰 Cobraste " + res.win;
 
