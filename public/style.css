@@ -760,6 +760,92 @@ button.danger {
 .bet-controls button:hover {
   background: #444;
 }
+/* ===== SLOT 25 PAYLINES UPGRADE ===== */
+
+.slot-caption {
+  margin: 10px auto 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 760px;
+}
+
+.payline-feed {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.payline-item {
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(243, 215, 122, 0.18);
+  color: #ffeaa0;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.payline-arrow {
+  color: var(--gold);
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.payline-empty {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.reel {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.reel.reveal {
+  animation: reelReveal 0.14s ease;
+}
+
+@keyframes reelReveal {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.line-win {
+  animation: glowWin 0.5s infinite alternate;
+}
+
+.win-line {
+  animation: glowWin 0.5s infinite alternate;
+}
+
+@keyframes glowWin {
+  from {
+    box-shadow: 0 0 10px gold;
+  }
+  to {
+    box-shadow: 0 0 25px orange;
+  }
+}
+
+.reel img {
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.big-multiplier {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 18px 0;
+  text-shadow: 0 0 20px rgba(255,255,255,0.3);
+  transition: color 0.2s ease, transform 0.1s ease;
+}
 
 /* ===== CRASH GAME ===== */
 .big-multiplier {
