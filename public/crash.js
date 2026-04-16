@@ -28,7 +28,7 @@ function resetGame() {
 
   document.getElementById("multiplier").textContent = "1.00x";
   document.getElementById("status").textContent = "Esperando apuesta...";
-  
+
   const btn = document.getElementById("btnAction");
   btn.disabled = false;
   btn.textContent = "🚀 Apostar";
@@ -44,11 +44,11 @@ async function startGame() {
     body: JSON.stringify({ amount: bet })
   });
 
-if (!res.success) {
-  alert(res.error || "Error");
-  return;
-}
-  
+  if (!res.success) {
+    alert(res.error || "Error");
+    return;
+  }
+
   running = true;
   crashed = false;
   multiplier = 1;
@@ -75,8 +75,7 @@ async function cashOut() {
   if (!running || crashed) return;
 
   const res = await api("/api/crash/cashout", {
-    method: "POST",
-    body: JSON.stringify({ multiplier })
+    method: "POST"
   });
 
   clearInterval(interval);
@@ -87,7 +86,7 @@ async function cashOut() {
     running = false;
 
     document.getElementById("status").textContent =
-      "💥 CRASH en " + res.crashPoint + "x";
+      "💥 CRASH en " + (res.crashPoint || multiplier.toFixed(2)) + "x";
 
     setTimeout(resetGame, 2000);
     return;
@@ -101,16 +100,6 @@ async function cashOut() {
 
   setTimeout(resetGame, 1500);
 }
-  document.getElementById("status").textContent =
-    "💰 Cobraste " + res.win;
-
-  document.getElementById("balance").textContent = res.balance;
-
-  clearInterval(interval);
-
-  // 🔥 IMPORTANTE
-  setTimeout(resetGame, 1500);
-}
 
 function crashGame() {
   crashed = true;
@@ -121,7 +110,6 @@ function crashGame() {
   document.getElementById("status").textContent =
     "💥 CRASH en " + multiplier.toFixed(2) + "x";
 
-  // 🔥 IMPORTANTE
   setTimeout(resetGame, 2000);
 }
 
@@ -135,6 +123,7 @@ function action() {
 
 document.getElementById("btnAction").onclick = action;
 
+// opcional si lo usa el HTML
 function startRound() {
   startGame();
 }
