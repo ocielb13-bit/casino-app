@@ -303,6 +303,34 @@ function weightedPick(items) {
   return items[items.length - 1].symbol;
 }
 
+const PAYLINES = [
+  [0, 0, 0, 0, 0],
+  [1, 1, 1, 1, 1],
+  [2, 2, 2, 2, 2],
+  [0, 0, 1, 0, 0],
+  [2, 2, 1, 2, 2],
+  [1, 0, 0, 0, 1],
+  [1, 2, 2, 2, 1],
+  [0, 1, 2, 1, 0],
+  [2, 1, 0, 1, 2],
+  [0, 1, 1, 1, 0],
+  [2, 1, 1, 1, 2],
+  [0, 1, 0, 1, 0],
+  [2, 1, 2, 1, 2],
+  [1, 0, 1, 2, 1],
+  [1, 2, 1, 0, 1],
+  [0, 0, 0, 1, 2],
+  [2, 2, 2, 1, 0],
+  [0, 1, 2, 2, 2],
+  [2, 1, 0, 0, 0],
+  [1, 1, 0, 1, 1],
+  [1, 1, 2, 1, 1],
+  [0, 2, 0, 2, 0],
+  [2, 0, 2, 0, 2],
+  [0, 2, 1, 0, 2],
+  [2, 0, 1, 2, 0]
+];
+
 function buildBoard() {
   const weighted = [
     { symbol: "coin.png", weight: 24 },
@@ -319,44 +347,85 @@ function buildBoard() {
   );
 }
 
-function calcSlotWin(board, bet, settings) {
-  let win = 0;
-  let paylines = [];
-
-  for (let row = 0; row < 3; row++) {
-    let first = board[0][row];
-    if (first === "scatter.png") continue;
-
-    let count = 1;
-    for (let col = 1; col < 5; col++) {
-      if (board[col][row] === first || board[col][row] === "wild.png") count++;
-      else break;
-    }
-
-    if (count >= 3) {
-      let amount = 0;
-      if (count === 3) amount = bet * settings.slot_pay_3;
-      if (count === 4) amount = bet * settings.slot_pay_4;
-      if (count >= 5) amount = bet * settings.slot_pay_5;
-
-      win += amount;
-      paylines.push({
-        row,
-        count,
-        amount,
-        symbol: first
-      });
+function resolvePaylineTarget(board, line) {
+  for (let col = 0; col < line.length; col++) {
+    const symbol = board[col][line[col]];
+    if (symbol !== "wild.png" && symbol !== "scatter.png") {
+      return symbol;
     }
   }
 
-  const scatterCount = board.flat().filter((s) => s === "scatter.png").length;
-  const freeSpinsAwarded = scatterCount >= 3 ? Number(settings.free_spin_award || 5) : 0;
+  return "wild.png";
+}
+
+function evaluatePayline(board, line, bet, settings, lineNumber) {
+  const target = resolvePaylineTarget(board, line);
+  const cells = [];
+  let count = 0;
+
+  for (let col = 0; col < line.length; col++) {
+    const row = line[col];
+    const symbol = board[col][row];
+
+    if (symbol === target || symbol === "wild.png") {
+      count += 1;
+      cells.push(`r${col}c${row}`);
+    } else {
+      break;
+    }
+  }
+
+  if (count < 3) return null;
+
+  let payout = 0;
+  if (count === 3) payout = bet * settings.slot_pay_3;
+  else if (count === 4) payout = bet * settings.slot_pay_4;
+  else payout = bet * settings.slot_pay_5;
 
   return {
-    win,
+    lineNumber,
+    symbol: target,
+    count,
+    payout,
+    cells
+  };
+}
+
+function calcSlotWin(board, bet, settings) {
+  const paylines = [];
+  let win = 0;
+
+  PAYLINES.forEach((line, index) => {
+    const hit = evaluatePayline(board, line, bet, settings, index + 1);
+    if (hit) {
+      paylines.push(hit);
+      win += hit.payout;
+    }
+  });
+
+  const scatterCells = [];
+  board.forEach((column, col) => {
+    column.forEach((symbol, row) => {
+      if (symbol === "scatter.png") {
+        scatterCells.push(`r${col}c${row}`);
+      }
+    });
+  });
+
+  const scatterCount = scatterCells.length;
+  const freeSpinsAwarded = scatterCount >= 3 ? Number(settings.free_spin_award || 5) : 0;
+
+  const winSummary = paylines.length
+    ? paylines.map((p) => `Línea ${p.lineNumber} paga ${p.payout}`).join(" ⇒ ")
+    : "";
+
+  return {
+    win: Math.floor(win),
     paylines,
     scatterCount,
-    freeSpinsAwarded
+    scatterCells,
+    freeSpinsAwarded,
+    winSummary
   };
 }
 
@@ -405,13 +474,15 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       freeSpins,
       isFreeSpin,
       paylines: outcome.paylines,
-      scatterCount: outcome.scatterCount
+      scatterCount: outcome.scatterCount,
+      scatterCells: outcome.scatterCells,
+      freeSpinsAwarded: outcome.freeSpinsAwarded,
+      winSummary: outcome.winSummary
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 /* ================= RULETTE ================= */
 
 app.post("/api/roulette/spin", authRequired, async (req, res) => {
