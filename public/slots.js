@@ -421,7 +421,8 @@ async function animatePaylines(paylines) {
 }
 
 
-
+window.addEventListener("resize", setupCanvas);
+document.addEventListener("DOMContentLoaded", setupCanvas);
 
 window.jugar = jugar;
 window.changeBet = changeBet;
