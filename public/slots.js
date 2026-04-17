@@ -279,8 +279,6 @@ async function jugar() {
 
   spinning = true;
   setText("resultado", "Girando...");
-  setText("detallePago", "");
-  setText("bonusHint", "");
 
   const btn = byId("btnSpin");
   if (btn) btn.disabled = true;
@@ -291,31 +289,23 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
-    const board = Array.isArray(res?.board) ? res.board : randomBoard();
+    // ✅ ACÁ recién podés usar res
+    const betPerLine = currentBet / 25;
+
+    const board = res.board || randomBoard();
     await spinVisual(board);
 
-    saldoActual = Number(res?.balance ?? saldoActual);
+    saldoActual = res.balance;
     setText("saldo", saldoActual);
 
-    await animatePaylines(res?.paylines || []);
+    await animatePaylines(res.paylines || []);
 
-    if (res?.freeSpinsAwarded > 0) {
-      setText(
-        "bonusHint",
-        `🌀 ${res.scatterCount} scatters → +${res.freeSpinsAwarded} free spins`
-      );
-    } else if ((res?.scatterCount || 0) >= 3) {
-      setText(
-        "bonusHint",
-        `✨ ${res.scatterCount} scatters, pero el bonus no salió esta vez`
-      );
-    }
-
-    if (res?.win > 0) {
+    if (res.win > 0) {
       setText("resultado", `🔥 Ganaste ${res.win}`);
     } else {
       setText("resultado", "❌ Perdiste");
     }
+
   } catch (e) {
     console.error(e);
     setText("resultado", "Error");
