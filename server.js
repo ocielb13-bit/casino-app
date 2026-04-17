@@ -370,6 +370,8 @@ const SYMBOL_MULTIPLIERS = {
   "wild.png": 3
 };
 
+let casinoBank = 100000;
+
 function buildBoard(settings) {
   const weights = SYMBOL_WEIGHTS[String(settings.volatility || "medium")] || SYMBOL_WEIGHTS.medium;
 
@@ -421,7 +423,8 @@ function evaluatePayline(board, line, betPerLine, settings, lineNumber) {
     symbol: target,
     count,
     payout,
-    cells
+    cells,
+    line
   };
 }
 
@@ -497,6 +500,8 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       ? Number(user.balance || 0) + outcome.win
       : Number(user.balance || 0) - bet + outcome.win;
 
+    casinoBank = Math.max(0, casinoBank + bet - outcome.win);
+
     await saveUser(user.id, {
       balance: Math.max(0, Math.floor(newBalance)),
       freeSpins
@@ -513,7 +518,10 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       scatterCount: outcome.scatterCount,
       scatterCells: outcome.scatterCells,
       freeSpinsAwarded: outcome.freeSpinsAwarded,
-      winSummary: outcome.winSummary
+      winSummary: outcome.winSummary,
+      bank: casinoBank,
+      bet,
+      betPerLine
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
