@@ -241,6 +241,7 @@ async function jugar() {
     const res = await api("/api/slots/spin", {
       method: "POST",
       body: JSON.stringify({ amount: currentBet })
+betPerLine = res.betPerLine || (currentBet / 25);
     });
 
     const board = res.board || randomBoard();
