@@ -470,7 +470,7 @@ function calcSlotWin(board, bet, settings) {
 
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   try {
-    const bet = Number(req.body.amount);
+    const bet = Math.floor(Number(req.body.amount));
     const user = await getUserById(req.user.id);
     const settings = await getSettings();
 
@@ -485,6 +485,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       return res.status(400).json({ error: "Saldo insuficiente" });
     }
 
+    const betPerLine = bet / PAYLINES.length;
     const board = buildBoard(settings);
     const outcome = calcSlotWin(board, bet, settings);
 
@@ -521,7 +522,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       winSummary: outcome.winSummary,
       bank: casinoBank,
       bet,
-      betPerLine
+      betPerLine: Number(betPerLine.toFixed(2))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
