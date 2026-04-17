@@ -48,7 +48,7 @@ async function api(path, options = {}) {
   if (res.status === 401) {
     localStorage.removeItem("token");
     window.location.href = "/";
-    return;
+    return null;
   }
 
   if (!res.ok) throw new Error(data.error || "Error");
@@ -66,7 +66,6 @@ function setText(id, val) {
 
 function updateBetUI() {
   setText("bet", currentBet);
-  setText("betDisplay", currentBet);
 }
 
 function setCell(col, row, symbol) {
@@ -97,7 +96,16 @@ function randomBoard() {
 
 function clearWinEffects() {
   document.querySelectorAll(".reel").forEach((el) => {
-    el.classList.remove("win-low", "win-high", "win-jackpot", "line-win", "win-line", "reveal");
+    el.classList.remove(
+      "win-low",
+      "win-high",
+      "win-jackpot",
+      "line-win",
+      "win-line",
+      "reveal",
+      "scatter-hint",
+      "free-hint"
+    );
   });
 }
 
@@ -237,6 +245,104 @@ async function spinVisual(finalBoard) {
   stopSpinFX();
 }
 
+function setupCanvas() {
+  const canvas = byId("paylineCanvas");
+  const wrapper = document.querySelector(".slot-wrapper");
+
+  if (!canvas || !wrapper) return;
+
+  const rect = wrapper.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.floor(rect.width));
+  canvas.height = Math.max(1, Math.floor(rect.height));
+}
+
+function getCellCenter(col, row) {
+  const el = byId(`r${col}c${row}`);
+  const wrapper = document.querySelector(".slot-wrapper");
+
+  if (!el || !wrapper) return { x: 0, y: 0 };
+
+  const rect = el.getBoundingClientRect();
+  const parentRect = wrapper.getBoundingClientRect();
+
+  return {
+    x: rect.left - parentRect.left + rect.width / 2,
+    y: rect.top - parentRect.top + rect.height / 2
+  };
+}
+
+function clearCanvas() {
+  const canvas = byId("paylineCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawPayline(line, color = "gold") {
+  if (!Array.isArray(line) || line.length !== 5) return;
+
+  const canvas = byId("paylineCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.beginPath();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 20;
+  ctx.globalAlpha = 0.95;
+
+  line.forEach((row, col) => {
+    const pos = getCellCenter(col, row);
+
+    if (col === 0) ctx.moveTo(pos.x, pos.y);
+    else ctx.lineTo(pos.x, pos.y);
+  });
+
+  ctx.stroke();
+
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+}
+
+function normalizePaylineLine(lineObj) {
+  if (!lineObj || typeof lineObj !== "object") return null;
+
+  if (Array.isArray(lineObj.line)) return lineObj.line;
+  if (Array.isArray(lineObj.path)) return lineObj.path;
+  if (Array.isArray(lineObj.rows)) return lineObj.rows;
+
+  return null;
+}
+
+async function animatePaylines(paylines) {
+  if (!Array.isArray(paylines) || paylines.length === 0) return;
+
+  const colors = ["gold", "lime", "cyan", "red", "magenta", "#65d9ff", "#f3d77a"];
+
+  for (let i = 0; i < paylines.length; i++) {
+    const lineObj = paylines[i];
+    const line = normalizePaylineLine(lineObj);
+
+    if (!line) continue;
+
+    drawPayline(line, colors[i % colors.length]);
+
+    setText("detallePago", `Línea ${lineObj.lineNumber} paga ${lineObj.payout}`);
+
+    await new Promise((r) => setTimeout(r, 700));
+  }
+
+  if (paylines.length > 1) {
+    clearCanvas();
+  }
+}
+
 async function jugar() {
   if (spinning) return;
 
@@ -254,27 +360,35 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
-    const board = Array.isArray(res.board) ? res.board : randomBoard();
+    const board = Array.isArray(res?.board) ? res.board : randomBoard();
     await spinVisual(board);
 
-    saldoActual = Number(res.balance || saldoActual);
+    saldoActual = Number(res?.balance ?? saldoActual);
     setText("saldo", saldoActual);
-    setText("freeLine", Number(res.freeSpins || 0));
+    setText("freeLine", Number(res?.freeSpins ?? 0));
 
-    const summary = res.winSummary || formatPaylineSummary(res.paylines || []);
+    const summary = res?.winSummary || formatPaylineSummary(res?.paylines || []);
     setText("detallePago", summary);
-    renderPaylineFeed(res.paylines || []);
+    renderPaylineFeed(res?.paylines || []);
 
-    if (res.freeSpinsAwarded > 0) {
-      setText("bonusHint", `🌀 ${res.scatterCount} scatters → +${res.freeSpinsAwarded} free spins`);
+    if (res?.freeSpinsAwarded > 0) {
+      setText(
+        "bonusHint",
+        `🌀 ${res.scatterCount} scatters → +${res.freeSpinsAwarded} free spins`
+      );
+
       (res.scatterCells || []).forEach((cellId) => {
         const cell = byId(cellId);
         if (cell && cell.parentElement) {
           cell.parentElement.classList.add("free-hint");
         }
       });
-    } else if ((res.scatterCount || 0) >= 3) {
-      setText("bonusHint", `✨ ${res.scatterCount} scatters, pero el bonus no salió esta vez`);
+    } else if ((res?.scatterCount || 0) >= 3) {
+      setText(
+        "bonusHint",
+        `✨ ${res.scatterCount} scatters, pero el bonus no salió esta vez`
+      );
+
       (res.scatterCells || []).forEach((cellId) => {
         const cell = byId(cellId);
         if (cell && cell.parentElement) {
@@ -285,12 +399,13 @@ async function jugar() {
       setText("bonusHint", "");
     }
 
-    highlightWinLines(res.paylines || []);
-  
-  await animatePaylines(res.paylines || []); 
- if (res.isFreeSpin) {
+    highlightWinLines(res?.paylines || []);
+
+    await animatePaylines(res?.paylines || []);
+
+    if (res?.isFreeSpin) {
       showResult("🌀 FREE SPIN!", "bonus");
-    } else if (res.win > 0) {
+    } else if (res?.win > 0) {
       showResult(`🔥 Ganaste ${res.win}`, "win");
     } else {
       showResult("❌ Perdiste", "lose");
@@ -330,6 +445,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const initial = randomBoard();
     setGrid(initial);
+
+    requestAnimationFrame(() => {
+      setupCanvas();
+      clearCanvas();
+    });
+
     showResult("", "");
   } catch {
     localStorage.removeItem("token");
@@ -337,114 +458,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// =======================
-// 🎯 CANVAS PAYLINES (PRO VERSION)
-// =======================
-
-function setupCanvas() {
-  const canvas = document.getElementById("paylineCanvas");
-  const wrapper = document.querySelector(".slot-wrapper");
-
-  if (!canvas || !wrapper) return;
-
-  canvas.width = wrapper.offsetWidth;
-  canvas.height = wrapper.offsetHeight;
-}
-
-function getCellCenter(col, row) {
-  const el = document.getElementById(`r${col}c${row}`);
-  const wrapper = document.querySelector(".slot-wrapper");
-
-  if (!el || !wrapper) return { x: 0, y: 0 };
-
-  const rect = el.getBoundingClientRect();
-  const parentRect = wrapper.getBoundingClientRect();
-
-  return {
-    x: rect.left - parentRect.left + rect.width / 2,
-    y: rect.top - parentRect.top + rect.height / 2
-  };
-}
-
-function clearCanvas() {
-  const canvas = document.getElementById("paylineCanvas");
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// 🎨 DRAW PRO
-function drawPayline(line, color = "gold") {
-  if (!Array.isArray(line)) return; // 🔥 evita crash
-
-  const canvas = document.getElementById("paylineCanvas");
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.beginPath();
-
-  // 🎰 efecto dinámico
-  ctx.lineWidth = 6 + Math.random() * 2;
-  ctx.strokeStyle = color;
-
-  // ✨ glow PRO
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 20;
-  ctx.globalAlpha = 0.9;
-
-  line.forEach((row, col) => {
-    const pos = getCellCenter(col, row);
-
-    if (col === 0) ctx.moveTo(pos.x, pos.y);
-    else ctx.lineTo(pos.x, pos.y);
-  });
-
-  ctx.stroke();
-
-  // reset por seguridad
-  ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
-}
-
-// 🎬 ANIMACIÓN MEJORADA
-async function animatePaylines(paylines) {
-  if (!Array.isArray(paylines) || paylines.length === 0) return;
-
-  const colors = ["gold", "lime", "cyan", "red", "magenta"];
-
-  for (let i = 0; i < paylines.length; i++) {
-    const line = paylines[i];
-
-    // 🔥 evita errores si backend no manda bien
-    if (!line || !Array.isArray(line.line)) continue;
-
-    drawPayline(line.line, colors[i % colors.length]);
-
-    setText(
-      "detallePago",
-      `Línea ${line.lineNumber} paga ${line.payout}`
-    );
-
-    // ⚡ más rápido y dinámico
-    await new Promise((r) => setTimeout(r, 700));
-  }
-
-  // 🎯 si hay solo 1 línea, la dejamos visible (queda PRO)
-  if (paylines.length > 1) {
-    clearCanvas();
-  }
-}
-
-window.addEventListener("resize", setupCanvas);
-document.addEventListener("DOMContentLoaded", setupCanvas);
-
-
-window.addEventListener("resize", setupCanvas);
-document.addEventListener("DOMContentLoaded", setupCanvas);
+window.addEventListener("resize", () => {
+  setupCanvas();
+  clearCanvas();
+});
 
 window.jugar = jugar;
 window.changeBet = changeBet;
