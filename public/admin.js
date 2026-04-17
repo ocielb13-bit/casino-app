@@ -50,7 +50,12 @@ async function saveSettings() {
     roulette_payout: Number(roulette_payout.value),
     slot_pay_3: Number(slot_pay_3.value),
     slot_pay_4: Number(slot_pay_4.value),
-    slot_pay_5: Number(slot_pay_5.value)
+    slot_pay_5: Number(slot_pay_5.value),
+
+    // 🔥 NUEVOS CAMPOS (IMPORTANTES)
+    free_spin_award: Number(free_spin_award.value),
+    default_balance: Number(default_balance.value),
+    volatility: volatility.value
   };
 
   await api("/api/admin/settings", {
@@ -100,11 +105,12 @@ async function setBalance(id) {
 }
 
 // =========================
-// ➕ CREAR USUARIO (FIX REAL)
+// ➕ CREAR USUARIO (CORREGIDO)
 // =========================
 async function createUser() {
-  const username = document.getElementById("newUser").value.trim();
-  const password = document.getElementById("newPass").value.trim();
+  const username = document.getElementById("newUsername").value.trim();
+  const password = document.getElementById("newPassword").value.trim();
+  const role = document.getElementById("newRole").value;
   const balance = Number(document.getElementById("newBalance").value) || 0;
 
   if (!username || !password) {
@@ -117,6 +123,7 @@ async function createUser() {
     body: JSON.stringify({
       username,
       password,
+      role,
       balance
     })
   });
@@ -124,9 +131,9 @@ async function createUser() {
   alert("✅ Usuario creado");
 
   // limpiar inputs
-  document.getElementById("newUser").value = "";
-  document.getElementById("newPass").value = "";
-  document.getElementById("newBalance").value = "";
+  document.getElementById("newUsername").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("newBalance").value = "0";
 
   loadUsers();
 }
