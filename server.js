@@ -170,13 +170,17 @@ app.post("/api/logout", (req, res) => {
 });
 
 app.get("/api/me", authRequired, (req, res) => {
+  const bonusState = getSlotBonusState(req.user.id);
+
   res.json({
     success: true,
     id: req.user.id,
     username: req.user.username,
     role: req.user.role,
     balance: Number(req.user.balance || 0),
-    freeSpins: Number(req.user.freeSpins || 0)
+    freeSpins: Number(req.user.freeSpins || 0),
+    bonusMeter: Number(bonusState.meter || 0),
+    bonusChain: Number(bonusState.chain || 0)
   });
 });
 
@@ -184,7 +188,12 @@ app.get("/api/me", authRequired, (req, res) => {
 
 app.get("/api/game-info", authRequired, async (req, res) => {
   const settings = await getSettings();
-  res.json({ success: true, ...settings });
+  res.json({
+    success: true,
+    ...settings,
+    bank: casinoBank,
+    jackpot_bank: casinoBank
+  });
 });
 
 app.get("/api/admin/settings", authRequired, adminOnly, async (req, res) => {
@@ -371,6 +380,33 @@ const SYMBOL_MULTIPLIERS = {
 };
 
 let casinoBank = 100000;
+const slotBonusState = new Map();
+
+function getSlotBonusState(userId) {
+  const key = Number(userId);
+  if (!slotBonusState.has(key)) {
+    slotBonusState.set(key, { meter: 0, chain: 0 });
+  }
+
+  const state = slotBonusState.get(key);
+  return {
+    meter: Number(state.meter || 0),
+    chain: Number(state.chain || 0)
+  };
+}
+
+function setSlotBonusState(userId, state) {
+  const key = Number(userId);
+  slotBonusState.set(key, {
+    meter: Math.max(0, Math.min(99, Math.floor(Number(state.meter || 0)))),
+    chain: Math.max(0, Math.floor(Number(state.chain || 0)))
+  });
+}
+
+function bonusMultiplierFromChain(chain) {
+  if (chain <= 0) return 1;
+  return Number((1 + Math.min(2, chain * 0.25)).toFixed(2));
+}
 
 function buildBoard(settings) {
   const weights = SYMBOL_WEIGHTS[String(settings.volatility || "medium")] || SYMBOL_WEIGHTS.medium;
@@ -464,7 +500,8 @@ function calcSlotWin(board, bet, settings) {
     scatterCount,
     scatterCells,
     freeSpinsAwarded,
-    winSummary
+    winSummary,
+    betPerLine
   };
 }
 
@@ -480,49 +517,82 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
 
     let freeSpins = Number(user.freeSpins || 0);
     const isFreeSpin = freeSpins > 0;
+    const bonusState = getSlotBonusState(user.id);
 
     if (!isFreeSpin && user.balance < bet) {
       return res.status(400).json({ error: "Saldo insuficiente" });
     }
 
-    const betPerLine = bet / PAYLINES.length;
     const board = buildBoard(settings);
     const outcome = calcSlotWin(board, bet, settings);
 
+    let meterAward = 0;
+    if (!isFreeSpin) {
+      const meterGain = Math.min(60, (outcome.scatterCount * 18) + (outcome.win > 0 ? 5 : 0));
+      if (meterGain > 0) {
+        bonusState.meter = Math.min(100, bonusState.meter + meterGain);
+
+        if (bonusState.meter >= 100) {
+          meterAward = Number(settings.free_spin_award || 5);
+          bonusState.meter -= 100;
+          if (bonusState.meter < 0) bonusState.meter = 0;
+        }
+      }
+      bonusState.chain = 0;
+    } else {
+      bonusState.chain = Math.max(1, bonusState.chain + 1);
+    }
+
+    const bonusMultiplier = isFreeSpin ? bonusMultiplierFromChain(bonusState.chain) : 1;
+
     if (outcome.freeSpinsAwarded > 0) {
       freeSpins += outcome.freeSpinsAwarded;
+    }
+
+    if (meterAward > 0) {
+      freeSpins += meterAward;
     }
 
     if (isFreeSpin) {
       freeSpins = Math.max(0, freeSpins - 1);
     }
 
-    const newBalance = isFreeSpin
-      ? Number(user.balance || 0) + outcome.win
-      : Number(user.balance || 0) - bet + outcome.win;
+    const adjustedWin = Math.floor(outcome.win * bonusMultiplier);
 
-    casinoBank = Math.max(0, casinoBank + bet - outcome.win);
+    const newBalance = isFreeSpin
+      ? Number(user.balance || 0) + adjustedWin
+      : Number(user.balance || 0) - bet + adjustedWin;
+
+    casinoBank = Math.max(0, casinoBank + (isFreeSpin ? 0 : bet) - adjustedWin);
 
     await saveUser(user.id, {
       balance: Math.max(0, Math.floor(newBalance)),
       freeSpins
     });
 
+    setSlotBonusState(user.id, bonusState);
+
     res.json({
       success: true,
       board,
-      win: outcome.win,
+      win: adjustedWin,
       balance: Math.max(0, Math.floor(newBalance)),
       freeSpins,
       isFreeSpin,
+      bonusMode: isFreeSpin,
+      bonusMultiplier,
+      bonusChain: bonusState.chain,
+      bonusMeter: bonusState.meter,
+      bonusTriggered: meterAward > 0,
       paylines: outcome.paylines,
       scatterCount: outcome.scatterCount,
       scatterCells: outcome.scatterCells,
-      freeSpinsAwarded: outcome.freeSpinsAwarded,
+      freeSpinsAwarded: outcome.freeSpinsAwarded + meterAward,
       winSummary: outcome.winSummary,
       bank: casinoBank,
+      jackpot_bank: casinoBank,
       bet,
-      betPerLine: Number(betPerLine.toFixed(2))
+      betPerLine: Number(outcome.betPerLine.toFixed(2))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
