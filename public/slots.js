@@ -9,27 +9,26 @@ let spinning = false;
 let spinTimer = null;
 
 // =========================
-// 🎰 CONFIG SLOT (ESCALABLE)
+// 🎰 CONFIG SLOT
 // =========================
 const COLS = 5;
 const ROWS = 3;
 
-// Probabilidades (ajustable fácil)
 const spinWeights = [
   { symbol: "coin.png", weight: 24 },
   { symbol: "jade.png", weight: 20 },
   { symbol: "lantern.png", weight: 18 },
   { symbol: "goldpot.png", weight: 12 },
-  { symbol: "dragon.png", weight: 8 },   // 🔥 ALTO PAGO
-  { symbol: "wild.png", weight: 5 },     // comodín
-  { symbol: "scatter.png", weight: 3 }   // 🎁 FREE SPIN
+  { symbol: "dragon.png", weight: 8 },
+  { symbol: "wild.png", weight: 5 },
+  { symbol: "scatter.png", weight: 3 }
 ];
 
 // =========================
-// 🎲 RANDOM INTELIGENTE
+// 🎲 RANDOM
 // =========================
 function weightedPick(items) {
-  const total = items.reduce((sum, i) => sum + i.weight, 0);
+  const total = items.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
 
   for (const item of items) {
@@ -59,7 +58,8 @@ async function api(path, options = {}) {
   const res = await fetch(path, {
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: "Bearer " + token })
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...(options.headers || {})
     },
     ...options
   });
@@ -86,6 +86,14 @@ function setText(id, val) {
   if (el) el.textContent = val;
 }
 
+function updateBetUI() {
+  setText("bet", currentBet);
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // =========================
 // 🎰 GRID
 // =========================
@@ -95,37 +103,43 @@ function setCell(col, row, symbol) {
 }
 
 function setGrid(board) {
+  if (!Array.isArray(board) || board.length !== COLS) return;
+
   for (let c = 0; c < COLS; c++) {
+    if (!Array.isArray(board[c])) continue;
+
     for (let r = 0; r < ROWS; r++) {
-      setCell(c, r, board[c][r]);
+      if (board[c][r]) setCell(c, r, board[c][r]);
     }
   }
 }
 
 // =========================
-// 🎥 ANIMACIÓN SPIN PRO
+// 🎥 SPIN FX
 // =========================
 function startSpinFX() {
   stopSpinFX();
 
-  document.querySelectorAll(".reel").forEach(r =>
-    r.classList.add("spinning")
-  );
+  document.querySelectorAll(".reel").forEach((reel) => {
+    reel.classList.add("spinning");
+  });
 
   spinTimer = setInterval(() => {
-    document.querySelectorAll(".reel img").forEach(img => {
+    document.querySelectorAll(".reel img").forEach((img) => {
       img.src = basePath + randomSymbol();
     });
   }, 50);
 }
 
 function stopSpinFX() {
-  clearInterval(spinTimer);
-  spinTimer = null;
+  if (spinTimer) {
+    clearInterval(spinTimer);
+    spinTimer = null;
+  }
 
-  document.querySelectorAll(".reel").forEach(r =>
-    r.classList.remove("spinning")
-  );
+  document.querySelectorAll(".reel").forEach((reel) => {
+    reel.classList.remove("spinning");
+  });
 }
 
 async function spinColumn(col, finalBoard) {
@@ -140,7 +154,7 @@ async function spinColumn(col, finalBoard) {
 
   for (let r = 0; r < ROWS; r++) {
     const el = byId(`r${col}c${r}`);
-    el.classList.add("reveal");
+    if (el) el.classList.add("reveal");
     setCell(col, r, finalBoard[col][r]);
     await delay(70);
   }
@@ -157,7 +171,7 @@ async function spinVisual(board) {
 }
 
 // =========================
-// 🎨 CANVAS PAYLINES PRO
+// 🎨 CANVAS PAYLINES
 // =========================
 function setupCanvas() {
   const canvas = byId("paylineCanvas");
@@ -166,13 +180,15 @@ function setupCanvas() {
   if (!canvas || !wrap) return;
 
   const rect = wrap.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
+  canvas.width = Math.max(1, Math.floor(rect.width));
+  canvas.height = Math.max(1, Math.floor(rect.height));
 }
 
 function getCellCenter(col, row) {
   const el = byId(`r${col}c${row}`);
   const wrap = document.querySelector(".slot-wrapper");
+
+  if (!el || !wrap) return { x: 0, y: 0 };
 
   const r1 = el.getBoundingClientRect();
   const r2 = wrap.getBoundingClientRect();
@@ -183,45 +199,75 @@ function getCellCenter(col, row) {
   };
 }
 
-function drawPayline(line, color) {
+function clearCanvas() {
   const canvas = byId("paylineCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function normalizePaylineLine(lineObj) {
+  if (!lineObj || typeof lineObj !== "object") return null;
+
+  if (Array.isArray(lineObj.line)) return lineObj.line;
+  if (Array.isArray(lineObj.path)) return lineObj.path;
+  if (Array.isArray(lineObj.rows)) return lineObj.rows;
+
+  return null;
+}
+
+function drawPayline(line, color) {
+  if (!Array.isArray(line) || line.length !== COLS) return;
+
+  const canvas = byId("paylineCanvas");
+  if (!canvas) return;
+
   const ctx = canvas.getContext("2d");
 
   ctx.beginPath();
   ctx.lineWidth = 6;
   ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.shadowColor = color;
   ctx.shadowBlur = 20;
+  ctx.globalAlpha = 0.95;
 
   line.forEach((row, col) => {
     const p = getCellCenter(col, row);
-    col === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    if (col === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
   });
 
   ctx.stroke();
+
+  ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
 }
 
-function clearCanvas() {
-  const c = byId("paylineCanvas");
-  if (!c) return;
-  c.getContext("2d").clearRect(0, 0, c.width, c.height);
-}
-
 async function animatePaylines(paylines) {
-  const colors = ["gold", "cyan", "lime", "magenta", "orange"];
+  if (!Array.isArray(paylines) || paylines.length === 0) return;
+
+  const colors = ["gold", "cyan", "lime", "magenta", "orange", "#65d9ff", "#f3d77a"];
 
   for (let i = 0; i < paylines.length; i++) {
-    clearCanvas();
-    drawPayline(paylines[i].line, colors[i % colors.length]);
+    const lineObj = paylines[i];
+    const line = normalizePaylineLine(lineObj);
+    if (!line) continue;
 
-    setText("detallePago",
-      `💥 Línea ${paylines[i].lineNumber} paga ${paylines[i].payout}`
+    clearCanvas();
+    drawPayline(line, colors[i % colors.length]);
+
+    setText(
+      "detallePago",
+      `💥 Línea ${lineObj.lineNumber} paga ${lineObj.payout}`
     );
 
     await delay(900);
   }
 
+  await delay(250);
   clearCanvas();
 }
 
@@ -233,6 +279,8 @@ async function jugar() {
 
   spinning = true;
   setText("resultado", "Girando...");
+  setText("detallePago", "");
+  setText("bonusHint", "");
 
   const btn = byId("btnSpin");
   if (btn) btn.disabled = true;
@@ -241,23 +289,33 @@ async function jugar() {
     const res = await api("/api/slots/spin", {
       method: "POST",
       body: JSON.stringify({ amount: currentBet })
-betPerLine = res.betPerLine || (currentBet / 25);
     });
 
-    const board = res.board || randomBoard();
+    const board = Array.isArray(res?.board) ? res.board : randomBoard();
     await spinVisual(board);
 
-    saldoActual = res.balance;
+    saldoActual = Number(res?.balance ?? saldoActual);
     setText("saldo", saldoActual);
 
-    await animatePaylines(res.paylines || []);
+    await animatePaylines(res?.paylines || []);
 
-    if (res.win > 0) {
+    if (res?.freeSpinsAwarded > 0) {
+      setText(
+        "bonusHint",
+        `🌀 ${res.scatterCount} scatters → +${res.freeSpinsAwarded} free spins`
+      );
+    } else if ((res?.scatterCount || 0) >= 3) {
+      setText(
+        "bonusHint",
+        `✨ ${res.scatterCount} scatters, pero el bonus no salió esta vez`
+      );
+    }
+
+    if (res?.win > 0) {
       setText("resultado", `🔥 Ganaste ${res.win}`);
     } else {
       setText("resultado", "❌ Perdiste");
     }
-
   } catch (e) {
     console.error(e);
     setText("resultado", "Error");
@@ -268,24 +326,39 @@ betPerLine = res.betPerLine || (currentBet / 25);
 }
 
 // =========================
-// ⚙️ INIT
+// 🔧 BET CONTROLS
 // =========================
-function delay(ms) {
-  return new Promise(r => setTimeout(r, ms));
+function changeBet(amount) {
+  currentBet += Number(amount || 0);
+
+  if (currentBet < 10) currentBet = 10;
+  if (currentBet > 10000) currentBet = 10000;
+
+  updateBetUI();
 }
 
+// =========================
+// ⚙️ INIT
+// =========================
 document.addEventListener("DOMContentLoaded", async () => {
-  const me = await api("/api/me");
-  if (!me) return;
+  try {
+    const me = await api("/api/me");
+    if (!me) return;
 
-  saldoActual = me.balance;
-  setText("saldo", saldoActual);
+    saldoActual = Number(me.balance || 0);
+    setText("saldo", saldoActual);
+    updateBetUI();
 
-  setGrid(randomBoard());
+    setGrid(randomBoard());
 
-  requestAnimationFrame(() => {
-    setupCanvas();
-  });
+    requestAnimationFrame(() => {
+      setupCanvas();
+      clearCanvas();
+    });
+  } catch {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  }
 });
 
 window.addEventListener("resize", () => {
@@ -294,3 +367,4 @@ window.addEventListener("resize", () => {
 });
 
 window.jugar = jugar;
+window.changeBet = changeBet;
