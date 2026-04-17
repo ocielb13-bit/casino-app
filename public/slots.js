@@ -209,11 +209,9 @@ function clearCanvas() {
 
 function normalizePaylineLine(lineObj) {
   if (!lineObj || typeof lineObj !== "object") return null;
-
   if (Array.isArray(lineObj.line)) return lineObj.line;
   if (Array.isArray(lineObj.path)) return lineObj.path;
   if (Array.isArray(lineObj.rows)) return lineObj.rows;
-
   return null;
 }
 
@@ -259,10 +257,7 @@ async function animatePaylines(paylines) {
     clearCanvas();
     drawPayline(line, colors[i % colors.length]);
 
-    setText(
-      "detallePago",
-      `💥 Línea ${lineObj.lineNumber} paga ${lineObj.payout}`
-    );
+    setText("detallePago", `💥 Línea ${lineObj.lineNumber} paga ${lineObj.payout}`);
 
     await delay(900);
   }
@@ -289,23 +284,27 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
-    // ✅ ACÁ recién podés usar res
-    const betPerLine = currentBet / 25;
-
-    const board = res.board || randomBoard();
+    const board = res?.board || randomBoard();
     await spinVisual(board);
 
-    saldoActual = res.balance;
+    saldoActual = Number(res?.balance ?? saldoActual);
     setText("saldo", saldoActual);
 
-    await animatePaylines(res.paylines || []);
+    if (res?.bank !== undefined) {
+      setText("bankLine", res.bank);
+    }
 
-    if (res.win > 0) {
+    if (res?.freeSpins !== undefined) {
+      setText("freeLine", res.freeSpins);
+    }
+
+    await animatePaylines(res?.paylines || []);
+
+    if (res?.win > 0) {
       setText("resultado", `🔥 Ganaste ${res.win}`);
     } else {
       setText("resultado", "❌ Perdiste");
     }
-
   } catch (e) {
     console.error(e);
     setText("resultado", "Error");
@@ -338,6 +337,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     saldoActual = Number(me.balance || 0);
     setText("saldo", saldoActual);
     updateBetUI();
+
+    if (me.freeSpins !== undefined) {
+      setText("freeLine", me.freeSpins);
+    }
 
     setGrid(randomBoard());
 
