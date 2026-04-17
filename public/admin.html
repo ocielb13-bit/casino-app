@@ -2,74 +2,128 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin PRO</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body class="app-page">
+  <div class="page">
+    <div class="slot-shell" style="width:min(100%,1100px);">
+      <div class="top-bar">
+        <div>
+          <div class="eyebrow">Admin</div>
+          <h1 class="title">PANEL DE CONTROL</h1>
+          <p class="muted">Ajustes del casino, usuarios y balance.</p>
+        </div>
+        <button class="secondary" onclick="window.location.href='/menu.html'">⬅ Volver</button>
+      </div>
 
-<h1>PANEL DE CONTROL</h1>
+      <div class="admin-grid">
+        <div class="user-card">
+          <h2>⚙️ Configuración del Casino</h2>
 
-<<h2>⚙️ Configuración del Casino</h2>
+          <div class="form-grid">
+            <label>
+              🎯 Winrate (%W)
+              <input id="win_rate" type="number">
+            </label>
 
-<div style="display:grid; gap:10px; max-width:400px;">
+            <label>
+              💸 RTP (% retorno)
+              <input id="rtp" type="number">
+            </label>
 
-  <label>
-    🎯 Winrate (%W)
-    <small>Probabilidad de que el jugador gane una tirada</small><br>
-    <input id="win_rate" type="number">
-  </label>
+            <label>
+              🎰 Pago 3 iguales
+              <input id="slot_pay_3" type="number">
+            </label>
 
-  <label>
-    💸 RTP (% retorno)
-    <small>Porcentaje de dinero que vuelve al jugador a largo plazo</small><br>
-    <input id="rtp" type="number">
-  </label>
+            <label>
+              🎰 Pago 4 iguales
+              <input id="slot_pay_4" type="number">
+            </label>
 
-  <label>
-    🎰 Pago 3 iguales
-    <small>Multiplicador cuando salen 3 símbolos</small><br>
-    <input id="slot_pay_3" type="number">
-  </label>
+            <label>
+              🎰 Pago 5 iguales
+              <input id="slot_pay_5" type="number">
+            </label>
 
-  <label>
-    🎰 Pago 4 iguales
-    <small>Multiplicador cuando salen 4 símbolos</small><br>
-    <input id="slot_pay_4" type="number">
-  </label>
+            <label>
+              🎡 Winrate Ruleta
+              <input id="roulette_winrate" type="number">
+            </label>
 
-  <label>
-    🎰 Pago 5 iguales
-    <small>Multiplicador cuando salen 5 símbolos</small><br>
-    <input id="slot_pay_5" type="number">
-  </label>
+            <label>
+              🎡 Pago Ruleta
+              <input id="roulette_payout" type="number">
+            </label>
 
-  <label>
-    🎡 Winrate Ruleta
-    <small>Probabilidad de acertar en la ruleta (%)</small><br>
-    <input id="roulette_winrate" type="number">
-  </label>
+            <label>
+              🎁 Free Spins
+              <input id="free_spin_award" type="number">
+            </label>
 
-  <label>
-    🎡 Pago Ruleta
-    <small>Cuánto paga una apuesta ganadora (ej: 35x)</small><br>
-    <input id="roulette_payout" type="number">
-  </label>
+            <label>
+              💰 Saldo inicial
+              <input id="default_balance" type="number">
+            </label>
 
-  <label>
-    🎁 Free Spins (FS)
-    <small>Cantidad de tiradas gratis al activar bonus</small><br>
-    <input id="free_spin_award" type="number">
-  </label>
+            <label>
+              🌗 Volatilidad
+              <select id="volatility">
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </label>
+          </div>
 
-</div>
+          <div class="actions-row" style="margin-top:12px;">
+            <button class="primary" type="button" onclick="saveSettings()">💾 Guardar configuración</button>
+          </div>
+        </div>
 
-<br>
+        <div class="user-card">
+          <h2>👤 Crear usuario</h2>
 
-<button onclick="saveSettings()">💾 Guardar configuración</button>
+          <div class="form-grid">
+            <label>
+              Usuario
+              <input id="newUsername" type="text" placeholder="nuevo_usuario">
+            </label>
 
-<h2>👤 Usuarios</h2>
+            <label>
+              Contraseña
+              <input id="newPassword" type="password" placeholder="••••••••">
+            </label>
 
-<div id="users"></div>
+            <label>
+              Rol
+              <select id="newRole">
+                <option value="player">player</option>
+                <option value="admin">admin</option>
+              </select>
+            </label>
 
-<script src="/admin.js"></script>
+            <label>
+              Saldo inicial
+              <input id="newBalance" type="number" value="0">
+            </label>
+          </div>
+
+          <div class="actions-row" style="margin-top:12px;">
+            <button class="primary" type="button" onclick="createUser()">➕ Crear usuario</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="user-card" style="margin-top:16px;">
+        <h2>Usuarios</h2>
+        <div id="users" class="user-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/admin.js"></script>
 </body>
 </html>
