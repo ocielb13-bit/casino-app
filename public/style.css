@@ -23,8 +23,6 @@ html, body {
   min-height: 100%;
 }
 
-
-
 body {
   margin: 0;
   color: var(--text);
@@ -369,14 +367,30 @@ button.danger {
   color: #ffeaa0;
 }
 
-.slot-grid {
-  width: min(100%, 560px);
-  margin: 18px auto 8px;
-  display: grid;
+/* ===== SLOT ===== */
 
+.slot-wrapper {
+  position: relative;
+  width: fit-content;
+  margin: 18px auto 8px;
+}
+
+#paylineCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.slot-grid {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 560px);
+  display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(3, 1fr);
-
   gap: 10px;
 }
 
@@ -390,22 +404,38 @@ button.danger {
   place-items: center;
   box-shadow: 0 0 12px rgba(0,240,255,.12);
   position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .reel img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  transition: transform 0.2s ease;
+}
+
+.reel img:hover {
+  transform: scale(1.08);
 }
 
 .reel.spinning {
   animation: reelPulse .12s infinite alternate ease-in-out;
 }
 
+.reel.reveal {
+  animation: reelReveal 0.14s ease;
+}
+
 @keyframes reelPulse {
   from { transform: scale(1); }
   to { transform: scale(1.03); }
+}
+
+@keyframes reelReveal {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .win-low {
@@ -431,6 +461,59 @@ button.danger {
 .free-hint {
   border-color: rgba(52, 239, 154, 0.88);
   box-shadow: 0 0 18px rgba(52, 239, 154, 0.22);
+}
+
+.line-win {
+  animation: glowWin 0.5s infinite alternate;
+}
+
+@keyframes glowWin {
+  from {
+    box-shadow: 0 0 10px gold;
+  }
+  to {
+    box-shadow: 0 0 25px orange;
+  }
+}
+
+.slot-caption {
+  margin: 10px auto 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 760px;
+}
+
+.payline-feed {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.payline-item {
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(243, 215, 122, 0.18);
+  color: #ffeaa0;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.payline-arrow {
+  color: var(--gold);
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.payline-empty {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 .controls {
@@ -467,6 +550,14 @@ button.danger {
   padding: 14px 22px;
   border-radius: 16px;
   font-size: 18px;
+  background: linear-gradient(45deg, gold, orange);
+  color: black;
+  font-weight: bold;
+  box-shadow: 0 0 15px rgba(255, 200, 0, 0.5);
+}
+
+.spin-btn:active {
+  transform: scale(0.95);
 }
 
 .results {
@@ -500,6 +591,8 @@ button.danger {
   margin-top: 6px;
   min-height: 20px;
 }
+
+/* ===== ROULETTE ===== */
 
 .roulette-stage {
   display: grid;
@@ -593,6 +686,8 @@ button.danger {
   border-color: rgba(255,109,109,0.26);
 }
 
+/* ===== ADMIN / FORMS ===== */
+
 .admin-grid,
 .form-grid,
 .row {
@@ -635,6 +730,19 @@ button.danger {
 .small-gap {
   gap: 8px;
 }
+
+/* ===== CRASH ===== */
+
+.big-multiplier {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 18px 0;
+  text-shadow: 0 0 20px rgba(255,255,255,0.3);
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+/* ===== RESPONSIVE ===== */
 
 @media (max-width: 980px) {
   .roulette-stage {
@@ -708,241 +816,4 @@ button.danger {
     transform: translateY(220px);
     opacity: 0;
   }
-}
-/* ===== SLOT MEJORAS VISUALES ===== */
-
-.reel img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.2s ease;
-}
-
-.reel img:hover {
-  transform: scale(1.1);
-}
-
-.spin-btn {
-  font-size: 20px;
-  padding: 12px 24px;
-  border-radius: 12px;
-  background: linear-gradient(45deg, gold, orange);
-  color: black;
-  font-weight: bold;
-  box-shadow: 0 0 15px rgba(255, 200, 0, 0.5);
-}
-
-.spin-btn:active {
-  transform: scale(0.95);
-}
-
-.bet-controls button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: #222;
-  color: white;
-  border: 1px solid #555;
-}
-
-.win-line {
-  animation: glowWin 0.5s infinite alternate;
-}
-
-@keyframes glowWin {
-  from {
-    box-shadow: 0 0 10px gold;
-  }
-  to {
-    box-shadow: 0 0 25px orange;
-  }
-}
-
-.bet-controls button:hover {
-  background: #444;
-}
-
-/* ===== 🎯 SLOT WRAPPER + CANVAS FIX ===== */
-
-.slot-wrapper {
-  position: relative;
-  width: fit-content;
-  margin: 0 auto;
-}
-
-/* 🎯 CANVAS SOBRE EL SLOT */
-#paylineCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* 🎰 GRID BASE */
-.slot-grid {
-  position: relative;
-  z-index: 1;
-
-  width: min(100%, 560px);
-  margin: 18px auto 8px;
-
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-
-  gap: 10px;
-}
-
-/* ===== 🎰 REELS ===== */
-
-.reel {
-  aspect-ratio: 1 / 1;
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(14,18,30,1), rgba(6,8,14,1));
-  border: 1px solid rgba(101, 217, 255, 0.14);
-  overflow: hidden;
-
-  display: grid;
-  place-items: center;
-
-  box-shadow: 0 0 12px rgba(0,240,255,.12);
-
-  position: relative;
-
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-/* 🎯 IMÁGENES */
-.reel img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.2s ease;
-}
-
-.reel img:hover {
-  transform: scale(1.1);
-}
-
-/* 🎯 SPIN */
-.reel.spinning {
-  animation: reelPulse .12s infinite alternate ease-in-out;
-}
-
-@keyframes reelPulse {
-  from { transform: scale(1); }
-  to { transform: scale(1.03); }
-}
-
-/* 🎯 REVEAL */
-.reel.reveal {
-  animation: reelReveal 0.14s ease;
-}
-
-@keyframes reelReveal {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-/* ===== 💰 WIN STATES ===== */
-
-.win-low {
-  border-color: rgba(101, 217, 255, 0.7);
-  box-shadow: 0 0 18px rgba(101, 217, 255, 0.24);
-}
-
-.win-high {
-  border-color: rgba(243, 215, 122, 0.9);
-  box-shadow: 0 0 20px rgba(243, 215, 122, 0.24);
-}
-
-.win-jackpot {
-  border-color: rgba(255, 43, 214, 0.95);
-  box-shadow: 0 0 24px rgba(255, 43, 214, 0.28);
-}
-
-/* ===== 🎯 PAYLINE FEED ===== */
-
-.payline-feed {
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-
-.payline-item {
-  padding: 8px 11px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(243, 215, 122, 0.18);
-  color: #ffeaa0;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.payline-arrow {
-  color: var(--gold);
-  font-weight: 900;
-}
-
-/* ===== ✨ EFECTO GANADOR ===== */
-
-.line-win {
-  animation: glowWin 0.5s infinite alternate;
-}
-
-@keyframes glowWin {
-  from {
-    box-shadow: 0 0 10px gold;
-  }
-  to {
-    box-shadow: 0 0 25px orange;
-  }
-}
-
-/* ===== 🎰 BOTÓN SPIN MEJORADO ===== */
-
-.spin-btn {
-  min-width: 220px;
-  padding: 14px 22px;
-  border-radius: 16px;
-  font-size: 18px;
-
-  background: linear-gradient(45deg, gold, orange);
-  color: black;
-  font-weight: bold;
-
-  box-shadow: 0 0 15px rgba(255, 200, 0, 0.5);
-
-  transition: transform 0.15s ease;
-}
-
-.spin-btn:active {
-  transform: scale(0.95);
-}
-
-/* ===== 💥 MULTIPLIER (CRASH) ===== */
-
-.big-multiplier {
-  font-size: 72px;
-  font-weight: 900;
-  line-height: 1;
-  padding: 18px 0;
-
-  text-shadow: 0 0 20px rgba(255,255,255,0.3);
-
-  transition: color 0.2s ease, transform 0.1s ease;
-}
-/* ===== CRASH GAME ===== */
-.big-multiplier {
-  font-size: 72px;
-  font-weight: 900;
-  line-height: 1;
-  padding: 18px 0;
-  text-shadow: 0 0 20px rgba(255,255,255,0.3);
-  transition: color 0.2s ease, transform 0.1s ease;
 }
