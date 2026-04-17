@@ -286,16 +286,16 @@ function drawPayline(line, color = "gold") {
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.beginPath();
-  ctx.lineWidth = 6;
+  ctx.lineWidth = 8;
   ctx.strokeStyle = color;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+
+  // glow PRO
   ctx.shadowColor = color;
-  ctx.shadowBlur = 20;
-  ctx.globalAlpha = 0.95;
+  ctx.shadowBlur = 25;
 
   line.forEach((row, col) => {
     const pos = getCellCenter(col, row);
@@ -306,7 +306,6 @@ function drawPayline(line, color = "gold") {
 
   ctx.stroke();
 
-  ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
 }
 
@@ -323,24 +322,29 @@ function normalizePaylineLine(lineObj) {
 async function animatePaylines(paylines) {
   if (!Array.isArray(paylines) || paylines.length === 0) return;
 
-  const colors = ["gold", "lime", "cyan", "red", "magenta", "#65d9ff", "#f3d77a"];
+  const colors = ["#FFD700", "#00FFAA", "#00D4FF", "#FF4444", "#FF00FF"];
 
   for (let i = 0; i < paylines.length; i++) {
     const lineObj = paylines[i];
     const line = normalizePaylineLine(lineObj);
-
     if (!line) continue;
+
+    clearCanvas();
 
     drawPayline(line, colors[i % colors.length]);
 
-    setText("detallePago", `Línea ${lineObj.lineNumber} paga ${lineObj.payout}`);
+    setText(
+      "detallePago",
+      `💥 Línea ${lineObj.lineNumber} paga ${lineObj.payout}`
+    );
 
-    await new Promise((r) => setTimeout(r, 700));
+    // pequeño “highlight delay”
+    await new Promise((r) => setTimeout(r, 900));
   }
 
-  if (paylines.length > 1) {
-    clearCanvas();
-  }
+  // fade final
+  await new Promise((r) => setTimeout(r, 300));
+  clearCanvas();
 }
 
 async function jugar() {
