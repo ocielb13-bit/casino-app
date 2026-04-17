@@ -1,26 +1,44 @@
 const token = localStorage.getItem("token");
 
+// =========================
+// 🌐 API PRO (CON ERRORES)
+// =========================
 async function api(url, options = {}) {
-  const res = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    ...options
-  });
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      ...options
+    });
 
-  return res.json();
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      console.error("❌ API ERROR:", data);
+      alert(data.error || "Error en el servidor");
+      throw new Error(data.error || "Error");
+    }
+
+    return data;
+
+  } catch (err) {
+    console.error("🔥 FETCH ERROR:", err);
+    alert("Error de conexión con el servidor");
+    throw err;
+  }
 }
 
-/* SETTINGS */
-
+// =========================
+// ⚙️ SETTINGS
+// =========================
 async function loadSettings() {
   const s = await api("/api/admin/settings");
 
   Object.keys(s).forEach(k => {
-    if (document.getElementById(k)) {
-      document.getElementById(k).value = s[k];
-    }
+    const el = document.getElementById(k);
+    if (el) el.value = s[k];
   });
 }
 
@@ -40,11 +58,12 @@ async function saveSettings() {
     body: JSON.stringify(payload)
   });
 
-  alert("Guardado");
+  alert("✅ Configuración guardada");
 }
 
-/* USERS */
-
+// =========================
+// 👤 USERS
+// =========================
 async function loadUsers() {
   const data = await api("/api/admin/users");
 
@@ -55,8 +74,8 @@ async function loadUsers() {
     const div = document.createElement("div");
 
     div.innerHTML = `
-      ${u.username} 💰 ${u.balance}
-      <input type="number" id="b-${u.id}">
+      <b>${u.username}</b> 💰 ${u.balance}
+      <input type="number" id="b-${u.id}" placeholder="Nuevo saldo">
       <button onclick="setBalance(${u.id})">Set</button>
     `;
 
@@ -65,7 +84,12 @@ async function loadUsers() {
 }
 
 async function setBalance(id) {
-  const val = document.getElementById("b-" + id).value;
+  const val = Number(document.getElementById("b-" + id).value);
+
+  if (isNaN(val)) {
+    alert("Ingresá un número válido");
+    return;
+  }
 
   await api("/api/admin/user/" + id + "/balance", {
     method: "PUT",
@@ -75,7 +99,40 @@ async function setBalance(id) {
   loadUsers();
 }
 
-/* INIT */
+// =========================
+// ➕ CREAR USUARIO (FIX REAL)
+// =========================
+async function createUser() {
+  const username = document.getElementById("newUser").value.trim();
+  const password = document.getElementById("newPass").value.trim();
+  const balance = Number(document.getElementById("newBalance").value) || 0;
 
+  if (!username || !password) {
+    alert("Faltan datos");
+    return;
+  }
+
+  await api("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify({
+      username,
+      password,
+      balance
+    })
+  });
+
+  alert("✅ Usuario creado");
+
+  // limpiar inputs
+  document.getElementById("newUser").value = "";
+  document.getElementById("newPass").value = "";
+  document.getElementById("newBalance").value = "";
+
+  loadUsers();
+}
+
+// =========================
+// 🚀 INIT
+// =========================
 loadSettings();
 loadUsers();
