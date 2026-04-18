@@ -505,11 +505,48 @@ function calcSlotWin(board, bet, settings) {
   };
 }
 
-app.post("/api/slots/spin", authRequired, async (req, res) => {
+app.post("/api/slots/spin", async (req, res) => {
   try {
-    const bet = Math.floor(Number(req.body.amount));
-    const user = await getUserById(req.user.id);
-    const settings = await getSettings();
+    const userId = req.user.id;
+    const { bet, lines } = req.body;
+
+    // 🔹 traer usuario
+    const user = await db.getUser(userId);
+
+    const totalBet = bet * lines;
+
+    if (user.balance < totalBet) {
+      return res.status(400).json({ error: "Sin saldo" });
+    }
+
+    // 🔹 descontar apuesta
+    await db.updateBalance(userId, user.balance - totalBet);
+
+    // 🔹 traer settings del admin
+    const settings = await db.getSettings();
+
+    // 🎰 SPIN PRO
+    const result = spinSlot({
+      bet,
+      lines,
+      settings
+    });
+
+    // 🔹 sumar premio
+    const newBalance = user.balance - totalBet + result.win;
+    await db.updateBalance(userId, newBalance);
+
+    res.json({
+      board: result.board,
+      win: result.win,
+      balance: newBalance
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error en spin" });
+  }
+});
 
     if (!Number.isFinite(bet) || bet <= 0) {
       return res.status(400).json({ error: "Apuesta inválida" });
