@@ -1,18 +1,12 @@
 const basePath = "/assets/symbols/asian/";
 
-// =========================
-// 🎮 ESTADO DEL JUEGO
-// =========================
+const COLS = 5;
+const ROWS = 3;
+
 let saldoActual = 0;
 let currentBet = 100;
 let spinning = false;
 let spinTimer = null;
-
-// =========================
-// 🎰 CONFIG SLOT
-// =========================
-const COLS = 5;
-const ROWS = 3;
 
 const spinWeights = [
   { symbol: "coin.png", weight: 24 },
@@ -24,9 +18,6 @@ const spinWeights = [
   { symbol: "scatter.png", weight: 3 }
 ];
 
-// =========================
-// 🎲 RANDOM
-// =========================
 function weightedPick(items) {
   const total = items.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
@@ -49,9 +40,6 @@ function randomBoard() {
   );
 }
 
-// =========================
-// 🌐 API
-// =========================
 async function api(path, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -76,9 +64,6 @@ async function api(path, options = {}) {
   return data;
 }
 
-// =========================
-// 🧩 UI HELPERS
-// =========================
 const byId = (id) => document.getElementById(id);
 
 function setText(id, val) {
@@ -86,20 +71,24 @@ function setText(id, val) {
   if (el) el.textContent = val;
 }
 
-function updateBetUI() {
-  setText("bet", currentBet);
-}
-
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// =========================
-// 🎰 GRID
-// =========================
+function updateBetUI() {
+  setText("bet", currentBet);
+}
+
+function clampBet() {
+  if (currentBet < 10) currentBet = 10;
+  if (currentBet > 10000) currentBet = 10000;
+}
+
 function setCell(col, row, symbol) {
   const img = byId(`r${col}c${row}`);
-  if (img) img.src = basePath + symbol;
+  if (img && symbol) {
+    img.src = basePath + symbol;
+  }
 }
 
 function setGrid(board) {
@@ -107,16 +96,32 @@ function setGrid(board) {
 
   for (let c = 0; c < COLS; c++) {
     if (!Array.isArray(board[c])) continue;
-
     for (let r = 0; r < ROWS; r++) {
       if (board[c][r]) setCell(c, r, board[c][r]);
     }
   }
 }
 
-// =========================
-// 🎥 SPIN FX
-// =========================
+function clearWinEffects() {
+  document.querySelectorAll(".reel").forEach((el) => {
+    el.classList.remove(
+      "win-low",
+      "win-high",
+      "win-jackpot",
+      "line-win",
+      "reveal",
+      "scatter-hint",
+      "free-hint",
+      "bonus-pulse"
+    );
+  });
+}
+
+function clearPaylineFeed() {
+  const box = byId("paylineFeed");
+  if (box) box.innerHTML = "";
+}
+
 function startSpinFX() {
   stopSpinFX();
 
@@ -142,20 +147,110 @@ function stopSpinFX() {
   });
 }
 
-async function spinColumn(col, finalBoard) {
-  const cycles = 10 + col * 4;
+function changeBet(amount) {
+  currentBet += Number(amount || 0);
+  clampBet();
+  updateBetUI();
+}
 
-  for (let i = 0; i < cycles; i++) {
-    for (let r = 0; r < ROWS; r++) {
-      setCell(col, r, randomSymbol());
-    }
-    await delay(i < 5 ? 25 : 40);
+function formatPaylineSummary(paylines) {
+  if (!Array.isArray(paylines) || paylines.length === 0) return "Sin línea ganadora";
+  return paylines
+    .map((line) => `Línea ${line.lineNumber} paga ${line.payout}`)
+    .join(" ⇒ ");
+}
+
+function renderPaylineFeed(paylines) {
+  const box = byId("paylineFeed");
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  if (!Array.isArray(paylines) || paylines.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "payline-empty";
+    empty.textContent = "Sin línea ganadora";
+    box.appendChild(empty);
+    return;
   }
 
-  for (let r = 0; r < ROWS; r++) {
-    const el = byId(`r${col}c${r}`);
-    if (el) el.classList.add("reveal");
-    setCell(col, r, finalBoard[col][r]);
+  paylines.forEach((line, index) => {
+    const pill = document.createElement("span");
+    pill.className = "payline-item";
+    pill.textContent = `Línea ${line.lineNumber} paga ${line.payout}`;
+    box.appendChild(pill);
+
+    if (index < paylines.length - 1) {
+      const arrow = document.createElement("span");
+      arrow.className = "payline-arrow";
+      arrow.textContent = "⇒";
+      box.appendChild(arrow);
+    }
+  });
+}
+
+function showResult(text, cls = "") {
+  const result = byId("resultado");
+  if (!result) return;
+
+  result.className = cls;
+  result.textContent = text;
+}
+
+function showBonusBanner(text, active) {
+  const banner = byId("bonusBanner");
+  if (!banner) return;
+
+  banner.textContent = text;
+  banner.classList.toggle("is-visible", Boolean(active));
+}
+
+function updateBonusMeter(meter, chain) {
+  const pct = Math.max(0, Math.min(100, Number(meter || 0)));
+  const fill = byId("bonusMeterFill");
+  const label = byId("bonusMeterText");
+  const chainLine = byId("bonusChainLine");
+
+  if (fill) fill.style.width = `${pct}%`;
+  if (label) label.textContent = `${Math.round(pct)}%`;
+  if (chainLine) chainLine.textContent = `Cadena bonus: ${Number(chain || 0)}`;
+}
+
+function highlightWinLines(paylines) {
+  clearWinEffects();
+
+  (paylines || []).forEach((line) => {
+    const payout = Number(line.payout || 0);
+    const cls =
+      payout >= currentBet * 20 ? "win-jackpot" :
+      payout >= currentBet * 8 ? "win-high" :
+      "win-low";
+
+    (line.cells || []).forEach((cellId) => {
+      const cell = byId(cellId);
+      if (cell && cell.parentElement) {
+        cell.parentElement.classList.add("line-win", cls);
+      }
+    });
+  });
+}
+
+async function spinColumnToFinal(col, finalBoard) {
+  const cycles = 10 + col * 4;
+
+  for (let tick = 0; tick < cycles; tick++) {
+    for (let row = 0; row < ROWS; row++) {
+      setCell(col, row, randomSymbol());
+    }
+    await delay(tick < 5 ? 25 : 40);
+  }
+
+  for (let row = 0; row < ROWS; row++) {
+    const img = byId(`r${col}c${row}`);
+    if (img && finalBoard[col] && finalBoard[col][row]) {
+      img.classList.add("reveal");
+      img.src = basePath + finalBoard[col][row];
+    }
     await delay(70);
   }
 }
@@ -164,15 +259,12 @@ async function spinVisual(board) {
   startSpinFX();
 
   for (let c = 0; c < COLS; c++) {
-    await spinColumn(c, board);
+    await spinColumnToFinal(c, board);
   }
 
   stopSpinFX();
 }
 
-// =========================
-// 🎨 CANVAS PAYLINES
-// =========================
 function setupCanvas() {
   const canvas = byId("paylineCanvas");
   const wrap = document.querySelector(".slot-wrapper");
@@ -222,32 +314,31 @@ function drawPayline(line, color) {
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
+  const points = line.map((row, col) => getCellCenter(col, row));
 
+  ctx.save();
   ctx.beginPath();
   ctx.lineWidth = 6;
   ctx.strokeStyle = color;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.shadowColor = color;
-  ctx.shadowBlur = 20;
+  ctx.shadowBlur = 18;
   ctx.globalAlpha = 0.95;
 
-  line.forEach((row, col) => {
-    const p = getCellCenter(col, row);
-    if (col === 0) ctx.moveTo(p.x, p.y);
+  points.forEach((p, index) => {
+    if (index === 0) ctx.moveTo(p.x, p.y);
     else ctx.lineTo(p.x, p.y);
   });
 
   ctx.stroke();
-
-  ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
+  ctx.restore();
 }
 
 async function animatePaylines(paylines) {
   if (!Array.isArray(paylines) || paylines.length === 0) return;
 
-  const colors = ["gold", "cyan", "lime", "magenta", "orange", "#65d9ff", "#f3d77a"];
+  const colors = ["#FFD76A", "#00F0FF", "#34EF9A", "#FF2BD6", "#FF7B54", "#A8FF5F"];
 
   for (let i = 0; i < paylines.length; i++) {
     const lineObj = paylines[i];
@@ -258,7 +349,6 @@ async function animatePaylines(paylines) {
     drawPayline(line, colors[i % colors.length]);
 
     setText("detallePago", `💥 Línea ${lineObj.lineNumber} paga ${lineObj.payout}`);
-
     await delay(900);
   }
 
@@ -266,14 +356,33 @@ async function animatePaylines(paylines) {
   clearCanvas();
 }
 
-// =========================
-// 🎮 GAMEPLAY
-// =========================
+function winMessage(win) {
+  const amount = Number(win || 0);
+
+  if (amount >= currentBet * 20) {
+    return { text: `💎 JACKPOT ${amount}`, cls: "jackpot" };
+  }
+
+  if (amount >= currentBet * 8) {
+    return { text: `🔥 BIG WIN ${amount}`, cls: "big" };
+  }
+
+  if (amount > 0) {
+    return { text: `✨ Ganaste ${amount}`, cls: "win" };
+  }
+
+  return { text: "❌ Perdiste", cls: "lose" };
+}
+
 async function jugar() {
   if (spinning) return;
 
   spinning = true;
-  setText("resultado", "Girando...");
+  clearWinEffects();
+  clearPaylineFeed();
+  clearCanvas();
+  showResult("Girando...", "");
+  showBonusBanner("MODO BONUS", false);
 
   const btn = byId("btnSpin");
   if (btn) btn.disabled = true;
@@ -284,63 +393,79 @@ async function jugar() {
       body: JSON.stringify({ amount: currentBet })
     });
 
-    const board = res?.board || randomBoard();
+    const board = Array.isArray(res?.board) ? res.board : randomBoard();
     await spinVisual(board);
 
     saldoActual = Number(res?.balance ?? saldoActual);
     setText("saldo", saldoActual);
 
-    if (res?.bank !== undefined) {
-      setText("bankLine", res.bank);
+    if (res?.bank !== undefined) setText("bankLine", Number(res.bank));
+    if (res?.jackpot_bank !== undefined) setText("jackpotLine", Number(res.jackpot_bank));
+    if (res?.freeSpins !== undefined) setText("freeLine", Number(res.freeSpins));
+
+    updateBonusMeter(res?.bonusMeter ?? 0, res?.bonusChain ?? 0);
+
+    if (res?.bonusMode) {
+      showBonusBanner(`BONUS x${Number(res?.bonusMultiplier || 1).toFixed(2)}`, true);
+    } else {
+      showBonusBanner("MODO BONUS", false);
     }
 
-    if (res?.freeSpins !== undefined) {
-      setText("freeLine", res.freeSpins);
+    const summary = res?.winSummary || formatPaylineSummary(res?.paylines || []);
+    setText("detallePago", summary);
+    renderPaylineFeed(res?.paylines || []);
+
+    if ((res?.scatterCount || 0) > 0) {
+      setText(
+        "bonusHint",
+        `🎁 ${res.scatterCount} scatter${res.scatterCount === 1 ? "" : "s"} · +${res.freeSpinsAwarded || 0} free spins`
+      );
+    } else if (res?.bonusTriggered) {
+      setText("bonusHint", `🌀 Bonus activado · +${res.freeSpinsAwarded || 0} free spins`);
+    } else {
+      setText("bonusHint", "");
     }
 
+    highlightWinLines(res?.paylines || []);
     await animatePaylines(res?.paylines || []);
 
-    if (res?.win > 0) {
-      setText("resultado", `🔥 Ganaste ${res.win}`);
-    } else {
-      setText("resultado", "❌ Perdiste");
-    }
+    const msg = winMessage(res?.win || 0);
+    showResult(res?.isFreeSpin ? `🌀 FREE SPIN · x${Number(res?.bonusMultiplier || 1).toFixed(2)}` : msg.text, res?.isFreeSpin ? "bonus" : msg.cls);
   } catch (e) {
     console.error(e);
-    setText("resultado", "Error");
+    showResult("Error", "lose");
+  } finally {
+    if (btn) btn.disabled = false;
+    spinning = false;
   }
-
-  spinning = false;
-  if (btn) btn.disabled = false;
 }
 
-// =========================
-// 🔧 BET CONTROLS
-// =========================
-function changeBet(amount) {
-  currentBet += Number(amount || 0);
-
-  if (currentBet < 10) currentBet = 10;
-  if (currentBet > 10000) currentBet = 10000;
-
-  updateBetUI();
+function updateBonusFromMe(me) {
+  setText("bonusMeterLabel", `${Number(me?.bonusMeter || 0)}%`);
+  setText("bonusChainLabel", Number(me?.bonusChain || 0));
+  updateBonusMeter(Number(me?.bonusMeter || 0), Number(me?.bonusChain || 0));
 }
 
-// =========================
-// ⚙️ INIT
-// =========================
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     const me = await api("/api/me");
     if (!me) return;
 
     saldoActual = Number(me.balance || 0);
+    setText("playerLine", `Jugador: ${me.username}`);
     setText("saldo", saldoActual);
+    setText("freeLine", Number(me.freeSpins ?? 0));
+
+    updateBonusFromMe(me);
     updateBetUI();
 
-    if (me.freeSpins !== undefined) {
-      setText("freeLine", me.freeSpins);
-    }
+    try {
+      const info = await api("/api/game-info");
+      if (info) {
+        setText("rtpLine", Number(info.rtp || 30));
+        setText("jackpotLine", Number(info.jackpot_bank ?? info.bank ?? 1000));
+      }
+    } catch {}
 
     setGrid(randomBoard());
 
@@ -348,6 +473,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       setupCanvas();
       clearCanvas();
     });
+
+    showResult("", "");
   } catch {
     localStorage.removeItem("token");
     window.location.href = "/";
