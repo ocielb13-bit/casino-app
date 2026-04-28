@@ -404,7 +404,12 @@ function setSlotBonusState(userId, state) {
 
 function bonusMultiplierFromChain(chain) {
   if (chain <= 0) return 1;
-  return Number((1 + Math.min(2, chain * 0.25)).toFixed(2));
+  return Number((1 + Math.min(2.5, chain * 0.25)).toFixed(2));
+}
+
+function rtpMultiplier(settings) {
+  const raw = Number(settings.rtp || 90);
+  return Math.max(0.35, Math.min(1.15, raw / 100));
 }
 
 function buildBoard(settings) {
@@ -466,7 +471,6 @@ function evaluatePayline(board, line, betPerLine, settings, lineNumber) {
 function calcSlotWin(board, bet, settings) {
   const paylines = [];
   let win = 0;
-
   const betPerLine = bet / PAYLINES.length;
 
   PAYLINES.forEach((line, index) => {
@@ -504,45 +508,85 @@ function calcSlotWin(board, bet, settings) {
   };
 }
 
-function boardHasWin(board, bet, settings) {
-  return calcSlotWin(board, bet, settings).win > 0;
-}
-
-function makeForcedWinBoard() {
-  const board = buildBoard({ volatility: "medium" });
-  for (let col = 0; col < 5; col++) {
-    board[col][0] = "coin.png";
-  }
-  return board;
-}
-
-function makeForcedLoseBoard() {
+function makeNoWinBoard() {
   return [
-    ["coin.png", "coin.png", "coin.png"],
-    ["jade.png", "jade.png", "jade.png"],
-    ["lantern.png", "lantern.png", "lantern.png"],
-    ["goldpot.png", "goldpot.png", "goldpot.png"],
-    ["dragon.png", "dragon.png", "dragon.png"]
+    ["coin.png", "jade.png", "lantern.png"],
+    ["goldpot.png", "dragon.png", "coin.png"],
+    ["jade.png", "lantern.png", "goldpot.png"],
+    ["dragon.png", "coin.png", "jade.png"],
+    ["lantern.png", "goldpot.png", "dragon.png"]
   ];
 }
 
-function buildHouseBoard(settings, bet, wantWin) {
-  if (wantWin) {
-    const forced = makeForcedWinBoard();
-    const outcome = calcSlotWin(forced, bet, settings);
-    return { board: forced, outcome };
+function chooseWinningSymbol(settings) {
+  const volatility = String(settings.volatility || "medium");
+
+  if (volatility === "low") {
+    const roll = Math.random();
+    if (roll < 0.70) return "coin.png";
+    if (roll < 0.90) return "jade.png";
+    if (roll < 0.97) return "lantern.png";
+    return "goldpot.png";
   }
 
-  const forcedLose = makeForcedLoseBoard();
-  const outcome = calcSlotWin(forcedLose, bet, settings);
-  if (outcome.win === 0 && outcome.freeSpinsAwarded === 0) {
-    return { board: forcedLose, outcome };
+  if (volatility === "high") {
+    const roll = Math.random();
+    if (roll < 0.18) return "coin.png";
+    if (roll < 0.35) return "lantern.png";
+    if (roll < 0.60) return "goldpot.png";
+    if (roll < 0.85) return "dragon.png";
+    return "wild.png";
   }
 
-  const board = buildBoard(settings);
-  const res = calcSlotWin(board, bet, settings);
-  return { board, outcome: res };
+  const roll = Math.random();
+  if (roll < 0.50) return "coin.png";
+  if (roll < 0.72) return "jade.png";
+  if (roll < 0.88) return "lantern.png";
+  if (roll < 0.96) return "goldpot.png";
+  if (roll < 0.985) return "dragon.png";
+  return "wild.png";
 }
+
+function makeWinningBoard(settings) {
+  const board = buildBoard(settings);
+  const line = PAYLINES[Math.floor(Math.random() * PAYLINES.length)];
+  const symbol = chooseWinningSymbol(settings);
+
+  for (let col = 0; col < COLS; col++) {
+    board[col][line[col]] = symbol;
+  }
+
+  return board;
+}
+
+function buildHouseBoard(settings, shouldWin) {
+  return shouldWin ? makeWinningBoard(settings) : makeNoWinBoard();
+}
+
+app.get("/api/me", authRequired, (req, res) => {
+  const bonusState = getSlotBonusState(req.user.id);
+
+  res.json({
+    success: true,
+    id: req.user.id,
+    username: req.user.username,
+    role: req.user.role,
+    balance: Number(req.user.balance || 0),
+    freeSpins: Number(req.user.freeSpins || 0),
+    bonusMeter: Number(bonusState.meter || 0),
+    bonusChain: Number(bonusState.chain || 0)
+  });
+});
+
+app.get("/api/game-info", authRequired, async (req, res) => {
+  const settings = await getSettings();
+  res.json({
+    success: true,
+    ...settings,
+    bank: casinoBank,
+    jackpot_bank: casinoBank
+  });
+});
 
 app.post("/api/slots/spin", authRequired, async (req, res) => {
   try {
@@ -550,7 +594,6 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
     const settings = await getSettings();
 
     const bet = Math.floor(Number(req.body.amount ?? req.body.bet ?? 0));
-
     if (!Number.isFinite(bet) || bet <= 0) {
       return res.status(400).json({ error: "Apuesta inválida" });
     }
@@ -563,23 +606,11 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       return res.status(400).json({ error: "Saldo insuficiente" });
     }
 
-    const winRate = Number.isFinite(Number(settings.win_rate))
-      ? Math.max(0, Math.min(100, Number(settings.win_rate)))
-      : 30;
-
+    const winRate = Math.max(0, Math.min(100, Number(settings.win_rate ?? 30)));
     const shouldWin = Math.random() < (winRate / 100);
 
-    let board = buildBoard(settings);
-    let outcome = calcSlotWin(board, bet, settings);
-
-    for (let i = 0; i < 20; i++) {
-      if (shouldWin && outcome.win > 0) break;
-      if (!shouldWin && outcome.win === 0 && outcome.freeSpinsAwarded === 0) break;
-
-      const next = buildHouseBoard(settings, bet, shouldWin);
-      board = next.board;
-      outcome = next.outcome;
-    }
+    const board = buildHouseBoard(settings, shouldWin);
+    const outcome = calcSlotWin(board, bet, settings);
 
     if (isFreeSpin) {
       bonusState.chain = Math.max(1, bonusState.chain + 1);
@@ -589,7 +620,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
 
     let meterAward = 0;
     if (!isFreeSpin) {
-      const meterGain = Math.min(60, (outcome.scatterCount * 18) + (outcome.win > 0 ? 5 : 0));
+      const meterGain = Math.min(55, (outcome.scatterCount * 18) + (outcome.win > 0 ? 8 : 0));
       if (meterGain > 0) {
         bonusState.meter = Math.min(100, bonusState.meter + meterGain);
 
@@ -602,6 +633,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
     }
 
     const bonusMultiplier = isFreeSpin ? bonusMultiplierFromChain(bonusState.chain) : 1;
+    const rtpFactor = rtpMultiplier(settings);
 
     if (outcome.freeSpinsAwarded > 0) {
       freeSpins += outcome.freeSpinsAwarded;
@@ -615,7 +647,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       freeSpins = Math.max(0, freeSpins - 1);
     }
 
-    const adjustedWin = Math.floor(outcome.win * bonusMultiplier);
+    const adjustedWin = Math.floor(outcome.win * bonusMultiplier * rtpFactor);
 
     const currentBalance = Number(user.balance || 0);
     const newBalance = isFreeSpin
@@ -651,7 +683,7 @@ app.post("/api/slots/spin", authRequired, async (req, res) => {
       bank: casinoBank,
       jackpot_bank: casinoBank,
       bet,
-      betPerLine: Number((bet / PAYLINES.length).toFixed(2))
+      betPerLine: Number(outcome.betPerLine.toFixed(2))
     });
   } catch (err) {
     console.error(err);
