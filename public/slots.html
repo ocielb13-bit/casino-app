@@ -5,94 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🐉 ASIAN DRAGON</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
 </head>
-<body class="app-page slot-page">
+<body class="app-page">
   <div class="page">
-    <div class="machine">
-      <div class="slot-shell">
+    <div class="machine slot-machine">
+      <div class="top-header">
+        <button class="back-button" onclick="window.location.href='/menu.html'">
+          ⬅ Volver
+        </button>
+        <div class="game-title-section">
+          <div class="game-eyebrow">Slots</div>
+          <h1 class="game-title">🐉 Asian Dragon</h1>
+        </div>
+        <button class="deposit-button">Depositar</button>
+      </div>
 
-        <div class="top-bar">
-          <div>
-            <div class="eyebrow">Slots</div>
-            <h1 class="title">🐉 Asian Dragon</h1>
-            <p class="muted" id="playerLine">Cargando...</p>
+      <div class="paytable-area">
+        <!-- Ejemplo de estructura para un símbolo de pago -->
+        <div class="paytable-card">
+          <div class="paytable-symbol-icon">
+            <img src="/assets/symbols/asian/dragon.png" alt="Dragon" />
           </div>
-
-          <button class="secondary" type="button" onclick="window.location.href='/menu.html'">
-            ⬅ Volver
-          </button>
-        </div>
-
-        <div class="stats">
-          <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
-          <div class="pill">🌀 Free Spins: <strong id="freeLine">0</strong></div>
-          <div class="pill">🎁 Bonus Meter: <strong id="bonusMeterLabel">0%</strong></div>
-          <div class="pill">🔁 Cadena Bonus: <strong id="bonusChainLabel">0</strong></div>
-          <div class="pill">🏦 Banco: <strong id="bankLine">0</strong></div>
-          <div class="pill">💎 Jackpot: <strong id="jackpotLine">1000</strong></div>
-          <div class="pill">📈 RTP: <strong id="rtpLine">30</strong>%</div>
-          <div class="pill">🧩 Paylines: <strong>25</strong></div>
-          <div class="pill">🎯 Apuesta: <strong id="bet">100</strong></div>
-        </div>
-
-        <div class="slot-paytable">
-          <div class="paytable-item paytable-item--wild">✨ Wild · comodín</div>
-          <div class="paytable-item">🐉 Dragon · paga más</div>
-          <div class="paytable-item">💎 Gold Pot · pago alto</div>
-          <div class="paytable-item">🏮 Lantern · pago medio</div>
-          <div class="paytable-item">🟩 Jade · pago bajo</div>
-          <div class="paytable-item">🪙 Coin · base</div>
-          <div class="paytable-item paytable-item--bonus">🎁 Bonus meter · entra a Free Spins</div>
-        </div>
-
-        <div class="slot-meta-row">
-          <div class="bonus-meter-card">
-            <div class="bonus-meter-head">
-              <span>🎁 Modo Bonus</span>
-              <strong id="bonusMeterText">0%</strong>
-            </div>
-            <div class="bonus-meter">
-              <div id="bonusMeterFill" class="bonus-meter__fill"></div>
-            </div>
-            <p id="bonusChainLine" class="small muted">Cadena bonus: 0</p>
-          </div>
-
-          <div id="bonusBanner" class="bonus-banner" aria-live="polite">
-            MODO BONUS
+          <div class="paytable-details">
+            <p>5 - 25.000</p>
+            <p>4 - 5.000</p>
+            <p>3 - 1.000</p>
           </div>
         </div>
-
-        <div class="slot-wrapper">
-          <canvas id="paylineCanvas"></canvas>
-
-          <div class="slot-grid">
-            <div class="reel"><img id="r0c0" alt="" draggable="false"></div>
-            <div class="reel"><img id="r0c1" alt="" draggable="false"></div>
-            <div class="reel"><img id="r0c2" alt="" draggable="false"></div>
-
-            <div class="reel"><img id="r1c0" alt="" draggable="false"></div>
-            <div class="reel"><img id="r1c1" alt="" draggable="false"></div>
-            <div class="reel"><img id="r1c2" alt="" draggable="false"></div>
-
-            <div class="reel"><img id="r2c0" alt="" draggable="false"></div>
-            <div class="reel"><img id="r2c1" alt="" draggable="false"></div>
-            <div class="reel"><img id="r2c2" alt="" draggable="false"></div>
-
-            <div class="reel"><img id="r3c0" alt="" draggable="false"></div>
-            <div class="reel"><img id="r3c1" alt="" draggable="false"></div>
-            <div class="reel"><img id="r3c2" alt="" draggable="false"></div>
-
-            <div class="reel"><img id="r4c0" alt="" draggable="false"></div>
-            <div class="reel"><img id="r4c1" alt="" draggable="false"></div>
-            <div class="reel"><img id="r4c2" alt="" draggable="false"></div>
+        <div class="paytable-card">
+          <div class="paytable-symbol-icon">
+            <img src="/assets/symbols/asian/goldpot.png" alt="Gold Pot" />
+          </div>
+          <div class="paytable-details">
+            <p>5 - 20.000</p>
+            <p>4 - 4.000</p>
+            <p>3 - 1.000</p>
           </div>
         </div>
+        <div class="paytable-card">
+          <div class="paytable-symbol-icon">
+            <img src="/assets/symbols/asian/lantern.png" alt="Lantern" />
+          </div>
+          <div class="paytable-details">
+            <p>5 - 4.000</p>
+            <p>4 - 1.000</p>
+            <p>3 - 400</p>
+          </div>
+        </div>
+        <div class="paytable-card">
+          <div class="paytable-symbol-icon">
+            <img src="/assets/symbols/asian/jade.png" alt="Jade" />
+          </div>
+          <div class="paytable-details">
+            <p>5 - 2.000</p>
+            <p>4 - 800</p>
+            <p>3 - 200</p>
+          </div>
+        </div>
+        <div class="paytable-card">
+          <div class="paytable-symbol-icon">
+            <img src="/assets/symbols/asian/coin.png" alt="Coin" />
+          </div>
+          <div class="paytable-details">
+            <p>5 - 1.000</p>
+            <p>4 - 400</p>
+            <p>3 - 100</p>
+          </div>
+        </div>
+        <div class="paytable-card bonus-meter-display">
+          <div class="paytable-symbol-icon">🎁</div>
+          <div class="paytable-details">
+            <p>Modo Bonus</p>
+            <p id="bonusMeterDisplay">0%</p>
+          </div>
+        </div>
+      </div>
+      <p class="paytable-info">TODOS LOS SÍMBOLOS GENERAN GANANCIAS DE IZQUIERDA A DERECHA. EL BONUS SE PAGA EN CUALQUIER POSICIÓN.</p>
 
-        <p class="slot-caption">
-          25 paylines activas · el pago se acumula por línea · bonus meter acumulativo.
-        </p>
+      <div class="slot-game-area">
+        <canvas id="paylineCanvas"></canvas>
+        <div class="slot-grid">
+          <div class="reel" id="reel-0"><img id="r0c0" alt="" draggable="false"><img id="r0c1" alt="" draggable="false"><img id="r0c2" alt="" draggable="false"></div>
+          <div class="reel" id="reel-1"><img id="r1c0" alt="" draggable="false"><img id="r1c1" alt="" draggable="false"><img id="r1c2" alt="" draggable="false"></div>
+          <div class="reel" id="reel-2"><img id="r2c0" alt="" draggable="false"><img id="r2c1" alt="" draggable="false"><img id="r2c2" alt="" draggable="false"></div>
+          <div class="reel" id="reel-3"><img id="r3c0" alt="" draggable="false"><img id="r3c1" alt="" draggable="false"><img id="r3c2" alt="" draggable="false"></div>
+          <div class="reel" id="reel-4"><img id="r4c0" alt="" draggable="false"><img id="r4c1" alt="" draggable="false"><img id="r4c2" alt="" draggable="false"></div>
+        </div>
+      </div>
 
-        <div class="controls">
+      <div class="game-feedback">
+        <p id="resultado" class="game-message"></p>
+        <p id="detallePago" class="win-detail"></p>
+        <p id="bonusHint" class="bonus-message"></p>
+      </div>
+
+      <div class="controls-panel">
+        <div class="game-stats-row">
+          <div class="stat-item">
+            <span class="stat-label">CRÉDITO</span>
+            <span class="stat-value" id="saldo">0,00</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">APUESTA</span>
+            <span class="stat-value" id="bet">100</span>
+          </div>
+          <div class="stat-item free-spins-display">
+            <span class="stat-label">FREE SPINS</span>
+            <span class="stat-value" id="freeLine">0</span>
+          </div>
+        </div>
+        <div class="bet-adjustment-area">
           <div class="bet-controls">
             <button type="button" onclick="changeBet(-1000)">-1000</button>
             <button type="button" onclick="changeBet(-100)">-100</button>
@@ -101,24 +126,17 @@
             <button type="button" onclick="changeBet(100)">+100</button>
             <button type="button" onclick="changeBet(1000)">+1000</button>
           </div>
-
-          <button id="btnSpin" class="spin-btn" type="button" onclick="jugar()">
-            🎰 GIRAR
+          <button id="btnSpin" class="spin-button" type="button" onclick="jugar()">
+            GIRAR
           </button>
         </div>
-
-        <div id="paylineFeed" class="payline-feed"></div>
-
-        <div class="results">
-          <p id="resultado"></p>
-          <p id="detallePago"></p>
-          <p id="bonusHint"></p>
-        </div>
-
       </div>
+      <div class="footer-stats">
+        <p class="muted">25 paylines activas · el pago se acumula por línea.</p>
+      </div>
+
     </div>
   </div>
-
   <script src="/slots.js"></script>
 </body>
 </html>
