@@ -6,7 +6,7 @@
   <title>🐉 ASIAN DRAGON</title>
   <link rel="stylesheet" href="/style.css">
 </head>
-<body class="app-page">
+<body class="app-page slot-page">
   <div class="page">
     <div class="machine">
       <div class="slot-shell">
@@ -18,18 +18,48 @@
             <p class="muted" id="playerLine">Cargando...</p>
           </div>
 
-          <button class="secondary" onclick="window.location.href='/menu.html'">
+          <button class="secondary" type="button" onclick="window.location.href='/menu.html'">
             ⬅ Volver
           </button>
         </div>
 
         <div class="stats">
           <div class="pill">💰 Saldo: <strong id="saldo">0</strong></div>
-          <div class="pill">🌀 Free Spins: <strong id="freeLine">0</strong></div>         
+          <div class="pill">🌀 Free Spins: <strong id="freeLine">0</strong></div>
+          <div class="pill">🎁 Bonus Meter: <strong id="bonusMeterLabel">0%</strong></div>
+          <div class="pill">🔁 Cadena Bonus: <strong id="bonusChainLabel">0</strong></div>
+          <div class="pill">🏦 Banco: <strong id="bankLine">0</strong></div>
           <div class="pill">💎 Jackpot: <strong id="jackpotLine">1000</strong></div>
           <div class="pill">📈 RTP: <strong id="rtpLine">30</strong>%</div>
           <div class="pill">🧩 Paylines: <strong>25</strong></div>
           <div class="pill">🎯 Apuesta: <strong id="bet">100</strong></div>
+        </div>
+
+        <div class="slot-paytable">
+          <div class="paytable-item paytable-item--wild">✨ Wild · comodín</div>
+          <div class="paytable-item">🐉 Dragon · paga más</div>
+          <div class="paytable-item">💎 Gold Pot · pago alto</div>
+          <div class="paytable-item">🏮 Lantern · pago medio</div>
+          <div class="paytable-item">🟩 Jade · pago bajo</div>
+          <div class="paytable-item">🪙 Coin · base</div>
+          <div class="paytable-item paytable-item--bonus">🎁 Bonus meter · entra a Free Spins</div>
+        </div>
+
+        <div class="slot-meta-row">
+          <div class="bonus-meter-card">
+            <div class="bonus-meter-head">
+              <span>🎁 Modo Bonus</span>
+              <strong id="bonusMeterText">0%</strong>
+            </div>
+            <div class="bonus-meter">
+              <div id="bonusMeterFill" class="bonus-meter__fill"></div>
+            </div>
+            <p id="bonusChainLine" class="small muted">Cadena bonus: 0</p>
+          </div>
+
+          <div id="bonusBanner" class="bonus-banner" aria-live="polite">
+            MODO BONUS
+          </div>
         </div>
 
         <div class="slot-wrapper">
@@ -59,7 +89,7 @@
         </div>
 
         <p class="slot-caption">
-          25 paylines activas · el pago se acumula por línea.
+          25 paylines activas · el pago se acumula por línea · bonus meter acumulativo.
         </p>
 
         <div class="controls">
